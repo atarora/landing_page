@@ -77,11 +77,11 @@ const client = new QdrantClient({
 ```
 
 ```rust
-use qdrant_client::client::QdrantClient;
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("https://xyz-example.eu-central.aws.cloud.qdrant.io:6334")
-        .with_api_key("<paste-your-api-key-here>")
-        .build()?;
+let client = Qdrant::from_url("https://xyz-example.eu-central.aws.cloud.qdrant.io:6334")
+    .api_key("<paste-your-api-key-here>")
+    .build()?;
 ```
 
 ```java
@@ -134,7 +134,7 @@ Both API keys can be used simultaneously.
 
 *Available as of v1.9.0*
 
-For more complex cases, Qdrant supports granular access control with [JSON Web Tokens (JWT)](https://jwt.io/). 
+For more complex cases, Qdrant supports granular access control with [JSON Web Tokens (JWT)](https://jwt.io/).
 This allows you to have tokens, which allow restricited access to a specific parts of the stored data and build [Role-based access control (RBAC)](https://en.wikipedia.org/wiki/Role-based_access_control) on top of that.
 In this way, you can define permissions for users and restrict access to sensitive endpoints.
 
@@ -149,7 +149,7 @@ service:
 Or with the environment variables:
 
 ```bash
-export QDRANT__SERVICE__API_KEY=your_secret_api_key_here 
+export QDRANT__SERVICE__API_KEY=your_secret_api_key_here
 export QDRANT__SERVICE__JWT_RBAC=true
 ```
 
@@ -184,12 +184,11 @@ const client = new QdrantClient({
 ```
 
 ```rust
-use qdrant_client::client::QdrantClient;
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("xyz-example.eu-central.aws.cloud.qdrant.io:6334")
-    .with_api_key("<JWT>")
-    .build()
-    .unwrap();
+let client = Qdrant::from_url("https://xyz-example.eu-central.aws.cloud.qdrant.io:6334")
+    .api_key("<JWT>")
+    .build()?;
 ```
 
 ```java
@@ -266,7 +265,7 @@ These are the available options, or **claims** in the JWT lingo. You can use the
   ```
 
 - **`value_exists`** - This is a claim that can be used to validate the token against the data stored in a collection. Structure of this claim is as follows:
-  
+
   ```json
   {
     "value_exists": {
@@ -279,7 +278,7 @@ These are the available options, or **claims** in the JWT lingo. You can use the
   ```
 
   If this claim is present, Qdrant will check if there is a point in the collection with the specified key-values. If it does, the token is valid.
-  
+
   This claim is especially useful if you want to have an ability to revoke tokens without changing the `api_key`.
   Consider a case where you have a collection of users, and you want to revoke access to a specific user.
 
@@ -336,10 +335,10 @@ These are the available options, or **claims** in the JWT lingo. You can use the
   }
   ```
 
-  This `payload` claim will be used to implicitly filter the points in the collection. It will be equivalent to appending this filter to each request:  
+  This `payload` claim will be used to implicitly filter the points in the collection. It will be equivalent to appending this filter to each request:
 
-  ```json  
-  { "filter": { "must": [{ "key": "user_id", "match": { "value": "user_123456" } }] } }  
+  ```json
+  { "filter": { "must": [{ "key": "user_id", "match": { "value": "user_123456" } }] } }
   ```
 
 ### Table of access
@@ -352,7 +351,7 @@ This is also applicable to using api keys instead of tokens. In that case, `api_
 
 | Action | manage | read-only | collection read-write | collection read-only | collection with payload claim (r / rw) |
 |--------|--------|-----------|----------------------|-----------------------|------------------------------------|
-| list collections | ✅ | ✅ | 🟡 | 🟡 | 🟡 |  
+| list collections | ✅ | ✅ | 🟡 | 🟡 | 🟡 |
 | get collection info | ✅ | ✅ | ✅ | ✅ | ❌ |
 | create collection | ✅ | ❌ | ❌ | ❌ | ❌ |
 | delete collection | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -398,6 +397,7 @@ This is also applicable to using api keys instead of tokens. In that case, `api_
 | delete payload | ✅ | ❌ | ✅ | ❌ | ❌ |
 | clear payload | ✅ | ❌ | ✅ | ❌ | ❌ |
 | scroll points | ✅ | ✅ | ✅ | ✅ | 🟡 |
+| query points | ✅ | ✅ | ✅ | ✅ | 🟡 |
 | search points | ✅ | ✅ | ✅ | ✅ | 🟡 |
 | search groups | ✅ | ✅ | ✅ | ✅ | 🟡 |
 | recommend points | ✅ | ✅ | ✅ | ✅ | ❌ |
@@ -474,9 +474,9 @@ const client = new QdrantClient({ url: "https://localhost", port: 6333 });
 ```
 
 ```rust
-use qdrant_client::client::QdrantClient;
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("https://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 ```
 
 Certificate rotation is enabled with a default refresh time of one hour. This
@@ -523,4 +523,9 @@ We recommend reducing the amount of permissions granted to Qdrant containers so 
   - You can set [`read_only: true`](https://docs.docker.com/compose/compose-file/05-services/#read_only) when using Docker Compose.
   - You can set [`readOnlyRootFilesystem: true`](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) when running in Kubernetes (our [Helm chart](https://github.com/qdrant/qdrant-helm) does this by default).
 
-There are other techniques for reducing the permissions such as dropping [Linux capabilities](https://www.man7.org/linux/man-pages/man7/capabilities.7.html) depending on your deployment method, but running as a non-root user with a read-only root file system are the two most important.
+* Block Qdrant's external network access. This can help mitigate [server side request forgery attacks](https://owasp.org/www-community/attacks/Server_Side_Request_Forgery), like via the [snapshot recovery API](https://api.qdrant.tech/api-reference/snapshots/recover-from-snapshot). Single-node Qdrant clusters do not require any outbound network access. Multi-node Qdrant clusters only need the ability to connect to other Qdrant nodes via TCP ports 6333, 6334, and 6335.
+  - You can use [`docker network create --internal <name>`](https://docs.docker.com/reference/cli/docker/network/create/#internal) and use that network when running [`docker run --network <name>`](https://docs.docker.com/reference/cli/docker/container/run/#network).
+  - You can create an [internal network](https://docs.docker.com/compose/compose-file/06-networks/#internal) when using Docker Compose.
+  - You can create a [NetworkPolicy](https://kubernetes.io/docs/concepts/services-networking/network-policies/) when using Kubernetes. Note that multi-node Qdrant clusters [will also need access to cluster DNS in Kubernetes](https://github.com/ahmetb/kubernetes-network-policy-recipes/blob/master/11-deny-egress-traffic-from-an-application.md#allowing-dns-traffic).
+
+There are other techniques for reducing the permissions such as dropping [Linux capabilities](https://www.man7.org/linux/man-pages/man7/capabilities.7.html) depending on your deployment method, but the methods mentioned above are the most important.

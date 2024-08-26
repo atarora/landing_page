@@ -1,9 +1,9 @@
 ---
-title: Deployment platforms
-weight: 4
+title: Deployment Platforms
+weight: 5
 ---
 
-# Platform Deployment Options
+# Qdrant Hybrid Cloud: Hosting Platforms & Deployment Options
 
 This page provides an overview of how to deploy Qdrant Hybrid Cloud on various managed Kubernetes platforms.
 
@@ -110,6 +110,18 @@ First, consult Digital Ocean's managed Kubernetes instructions below. Then, **to
 - [Getting Started with DOKS](https://docs.digitalocean.com/products/kubernetes/getting-started/quickstart/)
 - [DOKS - How To Guides](https://docs.digitalocean.com/products/kubernetes/how-to/)
 - [DOKS - Reference Manual](https://docs.digitalocean.com/products/kubernetes/reference/)
+
+![Gcore](/documentation/cloud/cloud-providers/gcore.svg)
+
+## Gcore
+
+[Gcore Managed Kubernetes](https://gcore.com/cloud/managed-kubernetes) is a managed container orchestration engine built on top of Kubernetes. Gcore enables you to quickly deploy and manage your containerized applications without needing to build (and maintain) your own Kubernetes cluster. All Gcore instances are equipped with a fully managed control plane at no additional cost.
+
+First, consult Gcore's managed Kubernetes instructions below. Then, **to set up Qdrant Hybrid Cloud on Gcore**, follow our [step-by-step documentation](/documentation/hybrid-cloud/hybrid-cloud-setup/).
+
+### More on Gcore Kubernetes Engine
+
+- [Getting Started with Kubnetes on Gcore](https://gcore.com/docs/cloud/kubernetes/about-gcore-kubernetes)
 
 ![Google Cloud Platform](/documentation/cloud/cloud-providers/gcp.jpg)
 

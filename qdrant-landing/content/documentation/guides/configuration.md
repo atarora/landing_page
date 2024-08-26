@@ -106,6 +106,7 @@ storage:
     #   region: ""
     #   access_key: ""
     #   secret_key: ""
+    #   endpoint_url: ""
 
   # Where to store temporary files
   # If null, temporary snapshot are stored in: storage/snapshots_temp/
@@ -168,7 +169,12 @@ storage:
     # Default is to allow 1 transfer.
     # If null - allow unlimited transfers.
     #outgoing_shard_transfers_limit: 1
-
+    
+    # Enable async scorer which uses io_uring when rescoring.
+    # Only supported on Linux, must be enabled in your kernel.
+    # See: <https://qdrant.tech/articles/io_uring/#and-what-about-qdrant>
+    #async_scorer: false
+      
   optimizers:
     # The minimal fraction of deleted vectors in a segment, required to perform segment optimization
     deleted_threshold: 0.2

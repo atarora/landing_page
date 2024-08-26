@@ -16,22 +16,25 @@ In addition to the regular search, Qdrant also allows you to search based on mul
 REST API - API Schema definition is available [here](https://api.qdrant.tech/api-reference/search/recommend-points)
 
 ```http
-POST /collections/{collection_name}/points/recommend
+POST /collections/{collection_name}/points/query
 {
-  "positive": [100, 231],
-  "negative": [718, [0.2, 0.3, 0.4, 0.5]],
-  "filter": {
-        "must": [
-            {
-                "key": "city",
-                "match": {
-                    "value": "London"
-                }
-            }
-        ]
+  "query": {
+    "recommend": {
+      "positive": [100, 231],
+      "negative": [718, [0.2, 0.3, 0.4, 0.5]],
+      "strategy": "average_vector"
+    }
   },
-  "strategy": "average_vector",
-  "limit": 3
+  "filter": {
+    "must": [
+      {
+        "key": "city",
+        "match": {
+          "value": "London"
+        }
+      }
+    ]
+  }
 }
 ```
 
@@ -40,11 +43,15 @@ from qdrant_client import QdrantClient, models
 
 client = QdrantClient(url="http://localhost:6333")
 
-client.recommend(
+client.query_points(
     collection_name="{collection_name}",
-    positive=[100, 231],
-    negative=[718, [0.2, 0.3, 0.4, 0.5]],
-    strategy=models.RecommendStrategy.AVERAGE_VECTOR,
+    query=models.RecommendQuery(
+        recommend=models.RecommendInput(
+            positive=[100, 231],
+            negative=[718, [0.2, 0.3, 0.4, 0.5]],
+            strategy=models.RecommendStrategy.AVERAGE_VECTOR,
+        )
+    ),
     query_filter=models.Filter(
         must=[
             models.FieldCondition(
@@ -64,79 +71,84 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 
 const client = new QdrantClient({ host: "localhost", port: 6333 });
 
-client.recommend("{collection_name}", {
-  positive: [100, 231],
-  negative: [718, [0.2, 0.3, 0.4, 0.5]],
-  strategy: "average_vector",
-  filter: {
-    must: [
-      {
-        key: "city",
-        match: {
-          value: "London",
-        },
-      },
-    ],
-  },
-  limit: 3,
+client.query("{collection_name}", {
+    query: {
+        recommend: {
+            positive: [100, 231],
+            negative: [718, [0.2, 0.3, 0.4, 0.5]],
+            strategy: "average_vector"
+        }
+    },
+    filter: {
+        must: [
+            {
+                key: "city",
+                match: {
+                    value: "London",
+                },
+            },
+        ],
+    },
+    limit: 3
 });
 ```
 
 ```rust
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{Condition, Filter, RecommendPoints, RecommendStrategy},
+use qdrant_client::qdrant::{
+    Condition, Filter, QueryPointsBuilder, RecommendInputBuilder, RecommendStrategy,
 };
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
-
+let client = Qdrant::from_url("http://localhost:6334").build()?;
+    
 client
-    .recommend(&RecommendPoints {
-        collection_name: "{collection_name}".to_string(),
-        positive: vec![100.into(), 200.into()],
-        positive_vectors: vec![vec![100.0, 231.0].into()],
-        negative: vec![718.into()],
-        negative_vectors: vec![vec![0.2, 0.3, 0.4, 0.5].into()],
-        strategy: Some(RecommendStrategy::AverageVector.into()),
-        filter: Some(Filter::must([Condition::matches(
-            "city",
-            "London".to_string(),
-        )])),
-        limit: 3,
-        ..Default::default()
-    })
+    .query(
+        QueryPointsBuilder::new("{collection_name}")
+            .query(
+                RecommendInputBuilder::default()
+                    .add_positive(100)
+                    .add_positive(231)
+                    .add_positive(vec![0.2, 0.3, 0.4, 0.5])
+                    .add_negative(718)
+                    .strategy(RecommendStrategy::AverageVector)
+                    .build(),
+            )
+            .limit(3)
+            .filter(Filter::must([Condition::matches(
+                "city",
+                "London".to_string(),
+            )])),
+    )
     .await?;
 ```
 
 ```java
 import java.util.List;
 
-import static io.qdrant.client.ConditionFactory.matchKeyword;
-import static io.qdrant.client.PointIdFactory.id;
-import static io.qdrant.client.VectorFactory.vector;
-
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.Filter;
-import io.qdrant.client.grpc.Points.RecommendPoints;
+import io.qdrant.client.grpc.Points.QueryPoints;
+import io.qdrant.client.grpc.Points.RecommendInput;
 import io.qdrant.client.grpc.Points.RecommendStrategy;
+import io.qdrant.client.grpc.Points.Filter;
+
+import static io.qdrant.client.ConditionFactory.matchKeyword;
+import static io.qdrant.client.VectorInputFactory.vectorInput;
+import static io.qdrant.client.QueryFactory.recommend;
 
 QdrantClient client =
     new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
 
-client
-    .recommendAsync(
-        RecommendPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .addAllPositive(List.of(id(100), id(200)))
-            .addAllPositiveVectors(List.of(vector(100.0f, 231.0f)))
-            .addAllNegative(List.of(id(718)))
-            .addAllPositiveVectors(List.of(vector(0.2f, 0.3f, 0.4f, 0.5f)))
-            .setStrategy(RecommendStrategy.AverageVector)
-            .setFilter(Filter.newBuilder().addMust(matchKeyword("city", "London")))
-            .setLimit(3)
-            .build())
-    .get();
+client.queryAsync(QueryPoints.newBuilder()
+        .setCollectionName("{collection_name}")
+        .setQuery(recommend(RecommendInput.newBuilder()
+                .addAllPositive(List.of(vectorInput(100), vectorInput(200), vectorInput(100.0f, 231.0f)))
+                .addAllNegative(List.of(vectorInput(718), vectorInput(0.2f, 0.3f, 0.4f, 0.5f)))
+                .setStrategy(RecommendStrategy.AverageVector)
+                .build()))
+        .setFilter(Filter.newBuilder().addMust(matchKeyword("city", "London")))
+        .setLimit(3)
+        .build()).get();
 ```
 
 ```csharp
@@ -146,10 +158,12 @@ using static Qdrant.Client.Grpc.Conditions;
 
 var client = new QdrantClient("localhost", 6334);
 
-await client.RecommendAsync(
-    "{collection_name}",
-    positive: new ulong[] { 100, 231 },
-    negative: new ulong[] { 718 },
+await client.QueryAsync(
+    collectionName: "{collection_name}",
+    query: new RecommendInput {
+        Positive = { 100, 231 },
+        Negative = { 718 }
+    },
     filter: MatchKeyword("city", "London"),
     limit: 3
 );
@@ -194,9 +208,9 @@ The way it works is that each candidate is measured against every example, then 
 
 ```rust
 let score = if best_positive_score > best_negative_score {
-    best_positive_score;
+    best_positive_score
 } else {
-    -(best_negative_score * best_negative_score);
+    -(best_negative_score * best_negative_score)
 };
 ```
 
@@ -225,79 +239,99 @@ Combining negative-only examples with filtering can be a powerful tool for data 
 If the collection was created with multiple vectors, the name of the vector should be specified in the recommendation request:
 
 ```http
-POST /collections/{collection_name}/points/recommend
+POST /collections/{collection_name}/points/query
 {
-  "positive": [100, 231],
-  "negative": [718],
+  "query": {
+    "recommend": {
+      "positive": [100, 231],
+      "negative": [718]
+    }
+  },
   "using": "image",
   "limit": 10
- }
+}
 ```
 
 ```python
-client.recommend(
+client.query_points(
     collection_name="{collection_name}",
-    positive=[100, 231],
-    negative=[718],
+    query=models.RecommendQuery(
+        recommend=models.RecommendInput(
+            positive=[100, 231],
+            negative=[718],
+        )
+    ),
     using="image",
     limit=10,
 )
 ```
 
 ```typescript
-client.recommend("{collection_name}", {
-  positive: [100, 231],
-  negative: [718],
-  using: "image",
-  limit: 10,
+client.query("{collection_name}", {
+    query: {
+        recommend: {
+            positive: [100, 231],
+            negative: [718],
+        }
+    },
+    using: "image",
+    limit: 10
 });
 ```
 
 ```rust
-use qdrant_client::qdrant::RecommendPoints;
+use qdrant_client::qdrant::{QueryPointsBuilder, RecommendInputBuilder};
 
 client
-    .recommend(&RecommendPoints {
-        collection_name: "{collection_name}".to_string(),
-        positive: vec![100.into(), 231.into()],
-        negative: vec![718.into()],
-        using: Some("image".to_string()),
-        limit: 10,
-        ..Default::default()
-    })
+    .query(
+        QueryPointsBuilder::new("{collection_name}")
+            .query(
+                RecommendInputBuilder::default()
+                    .add_positive(100)
+                    .add_positive(231)
+                    .add_negative(718)
+                    .build(),
+            )
+            .limit(10)
+            .using("image"),
+    )
     .await?;
 ```
 
 ```java
 import java.util.List;
 
-import static io.qdrant.client.PointIdFactory.id;
+import io.qdrant.client.grpc.Points.QueryPoints;
+import io.qdrant.client.grpc.Points.RecommendInput;
 
-import io.qdrant.client.grpc.Points.RecommendPoints;
+import static io.qdrant.client.VectorInputFactory.vectorInput;
+import static io.qdrant.client.QueryFactory.recommend;
 
-client
-    .recommendAsync(
-        RecommendPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .addAllPositive(List.of(id(100), id(231)))
-            .addAllNegative(List.of(id(718)))
-            .setUsing("image")
-            .setLimit(10)
-            .build())
-    .get();
+client.queryAsync(QueryPoints.newBuilder()
+        .setCollectionName("{collection_name}")
+        .setQuery(recommend(RecommendInput.newBuilder()
+                .addAllPositive(List.of(vectorInput(100), vectorInput(231)))
+                .addAllNegative(List.of(vectorInput(718)))
+                .build()))
+        .setUsing("image")
+        .setLimit(10)
+        .build()).get();
 ```
 
 ```csharp
 using Qdrant.Client;
+using Qdrant.Client.Grpc;
 
 var client = new QdrantClient("localhost", 6334);
 
-await client.RecommendAsync(
-	collectionName: "{collection_name}",
-	positive: new ulong[] { 100, 231 },
-	negative: new ulong[] { 718 },
-	usingVector: "image",
-	limit: 10
+await client.QueryAsync(
+    collectionName: "{collection_name}",
+    query: new RecommendInput {
+        Positive = { 100, 231 },
+        Negative = { 718 }
+    },
+    usingVector: "image",
+    limit: 10
 );
 ```
 
@@ -315,90 +349,103 @@ It might be useful, e.g. in the item-to-user recommendations scenario.
 Where user and item embeddings, although having the same vector parameters (distance type and dimensionality), are usually stored in different collections.
 
 ```http
-POST /collections/{collection_name}/points/recommend
-
+POST /collections/{collection_name}/points/query
 {
-  "positive": [100, 231],
-  "negative": [718],
-  "using": "image",
+  "query": {
+    "recommend": {
+      "positive": [100, 231],
+      "negative": [718]
+    }
+  },
   "limit": 10,
   "lookup_from": {
-    "collection":"{external_collection_name}",
-    "vector":"{external_vector_name}"
- }
+    "collection": "{external_collection_name}",
+    "vector": "{external_vector_name}"
+  }
 }
 ```
 
 ```python
-client.recommend(
+client.query_points(
     collection_name="{collection_name}",
-    positive=[100, 231],
-    negative=[718],
+    query=models.RecommendQuery(
+        recommend=models.RecommendInput(
+            positive=[100, 231],
+            negative=[718],
+        )
+    ),
     using="image",
     limit=10,
     lookup_from=models.LookupLocation(
-        collection="{external_collection_name}",
-        vector="{external_vector_name}"
+        collection="{external_collection_name}", vector="{external_vector_name}"
     ),
 )
 ```
 
 ```typescript
-client.recommend("{collection_name}", {
-  positive: [100, 231],
-  negative: [718],
-  using: "image",
-  limit: 10,
-  lookup_from: {
-        "collection" : "{external_collection_name}",
-        "vector" : "{external_vector_name}"
+client.query("{collection_name}", {
+    query: {
+        recommend: {
+            positive: [100, 231],
+            negative: [718],
+        }
     },
+    using: "image",
+    limit: 10,
+    lookup_from: {
+        collection: "{external_collection_name}",
+        vector: "{external_vector_name}"
+    }
 });
 ```
 
 ```rust
-use qdrant_client::qdrant::{LookupLocation, RecommendPoints};
+use qdrant_client::qdrant::{LookupLocationBuilder, QueryPointsBuilder, RecommendInputBuilder};
 
 client
-    .recommend(&RecommendPoints {
-        collection_name: "{collection_name}".to_string(),
-        positive: vec![100.into(), 231.into()],
-        negative: vec![718.into()],
-        using: Some("image".to_string()),
-        limit: 10,
-        lookup_from: Some(LookupLocation {
-            collection_name: "{external_collection_name}".to_string(),
-            vector_name: Some("{external_vector_name}".to_string()),
-            ..Default::default()
-        }),
-        ..Default::default()
-    })
+    .query(
+        QueryPointsBuilder::new("{collection_name}")
+            .query(
+                RecommendInputBuilder::default()
+                    .add_positive(100)
+                    .add_positive(231)
+                    .add_negative(718)
+                    .build(),
+            )
+            .limit(10)
+            .using("image")
+            .lookup_from(
+                LookupLocationBuilder::new("{external_collection_name}")
+                    .vector_name("{external_vector_name}"),
+            ),
+    )
     .await?;
 ```
 
 ```java
 import java.util.List;
 
-import static io.qdrant.client.PointIdFactory.id;
-
 import io.qdrant.client.grpc.Points.LookupLocation;
-import io.qdrant.client.grpc.Points.RecommendPoints;
+import io.qdrant.client.grpc.Points.QueryPoints;
+import io.qdrant.client.grpc.Points.RecommendInput;
 
-client
-    .recommendAsync(
-        RecommendPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .addAllPositive(List.of(id(100), id(231)))
-            .addAllNegative(List.of(id(718)))
-            .setUsing("image")
-            .setLimit(10)
-            .setLookupFrom(
+import static io.qdrant.client.VectorInputFactory.vectorInput;
+import static io.qdrant.client.QueryFactory.recommend;
+
+client.queryAsync(QueryPoints.newBuilder()
+        .setCollectionName("{collection_name}")
+        .setQuery(recommend(RecommendInput.newBuilder()
+                .addAllPositive(List.of(vectorInput(100), vectorInput(231)))
+                .addAllNegative(List.of(vectorInput(718)))
+                .build()))
+        .setUsing("image")
+        .setLimit(10)
+        .setLookupFrom(
                 LookupLocation.newBuilder()
-                    .setCollectionName("{external_collection_name}")
-                    .setVectorName("{external_vector_name}")
-                    .build())
-            .build())
-    .get();
+                        .setCollectionName("{external_collection_name}")
+                        .setVectorName("{external_vector_name}")
+                        .build())
+        .build()).get();
 ```
 
 ```csharp
@@ -407,13 +454,15 @@ using Qdrant.Client.Grpc;
 
 var client = new QdrantClient("localhost", 6334);
 
-await client.RecommendAsync(
-	collectionName: "{collection_name}",
-	positive: new ulong[] { 100, 231 },
-	negative: new ulong[] { 718 },
+await client.QueryAsync(
+    collectionName: "{collection_name}",
+    query: new RecommendInput {
+        Positive = { 100, 231 },
+        Negative = { 718 }
+    },
 	usingVector: "image",
 	limit: 10,
-	lookupFrom: new LookupLocation
+    lookupFrom: new LookupLocation
 	{
 		CollectionName = "{external_collection_name}",
 		VectorName = "{external_vector_name}",
@@ -432,40 +481,48 @@ These vectors then used to perform the recommendation in the current collection,
 Similar to the batch search API in terms of usage and advantages, it enables the batching of recommendation requests.
 
 ```http
-POST /collections/{collection_name}/points/recommend/batch
+POST /collections/{collection_name}/query/batch
 {
-    "searches": [
-        {
-            "filter": {
-                    "must": [
-                        {
-                            "key": "city",
-                            "match": {
-                                "value": "London"
-                            }
-                        }
-                    ]
-            },
-            "negative": [718],
-            "positive": [100, 231],
-            "limit": 10
-        },
-        {
-            "filter": {
-                "must": [
-                    {
-                        "key": "city",
-                        "match": {
-                            "value": "London"
-                        }
-                    }
-                    ]
-            },
-            "negative": [300],
-            "positive": [200, 67],
-            "limit": 10
+  "searches": [
+    {
+      "query": {
+        "recommend": {
+          "positive": [100, 231],
+          "negative": [718]
         }
-    ]
+      },
+      "filter": {
+        "must": [
+          {
+            "key": "city",
+            "match": {
+              "value": "London"
+            }
+          }
+        ]
+      },
+      "limit": 10
+    },
+    {
+      "query": {
+        "recommend": {
+          "positive": [200, 67],
+          "negative": [300]
+        }
+      },
+      "filter": {
+        "must": [
+          {
+            "key": "city",
+            "match": {
+              "value": "London"
+            }
+          }
+        ]
+      },
+      "limit": 10
+    }
+  ]
 }
 ```
 
@@ -486,13 +543,25 @@ filter_ = models.Filter(
 )
 
 recommend_queries = [
-    models.RecommendRequest(
-        positive=[100, 231], negative=[718], filter=filter_, limit=3
+    models.QueryRequest(
+        query=models.RecommendQuery(
+            recommend=models.RecommendInput(positive=[100, 231], negative=[718])
+        ),
+        filter=filter_,
+        limit=3,
     ),
-    models.RecommendRequest(positive=[200, 67], negative=[300], filter=filter_, limit=3),
+    models.QueryRequest(
+        query=models.RecommendQuery(
+            recommend=models.RecommendInput(positive=[200, 67], negative=[300])
+        ),
+        filter=filter_,
+        limit=3,
+    ),
 ]
 
-client.recommend_batch(collection_name="{collection_name}", requests=recommend_queries)
+client.query_batch_points(
+    collection_name="{collection_name}", requests=recommend_queries
+)
 ```
 
 ```typescript
@@ -501,106 +570,127 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 const client = new QdrantClient({ host: "localhost", port: 6333 });
 
 const filter = {
-  must: [
-    {
-      key: "city",
-      match: {
-        value: "London",
-      },
-    },
-  ],
+    must: [
+        {
+            key: "city",
+            match: {
+                value: "London",
+            },
+        },
+    ],
 };
 
 const searches = [
-  {
-    positive: [100, 231],
-    negative: [718],
-    filter,
-    limit: 3,
-  },
-  {
-    positive: [200, 67],
-    negative: [300],
-    filter,
-    limit: 3,
-  },
+    {
+        query: {
+            recommend: {
+                positive: [100, 231],
+                negative: [718]
+            }
+        },
+        filter,
+        limit: 3,
+    },
+    {
+        query: {
+            recommend: {
+                positive: [200, 67],
+                negative: [300]
+            }
+        },
+        filter,
+        limit: 3,
+    },
 ];
 
-client.recommend_batch("{collection_name}", {
-  searches,
+client.queryBatch("{collection_name}", {
+    searches,
 });
 ```
 
 ```rust
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{Condition, Filter, RecommendBatchPoints, RecommendPoints},
+use qdrant_client::qdrant::{
+    Condition, Filter, QueryBatchPointsBuilder, QueryPointsBuilder,
+    RecommendInputBuilder,
 };
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 let filter = Filter::must([Condition::matches("city", "London".to_string())]);
 
 let recommend_queries = vec![
-    RecommendPoints {
-        collection_name: "{collection_name}".to_string(),
-        positive: vec![100.into(), 231.into()],
-        negative: vec![718.into()],
-        filter: Some(filter.clone()),
-        limit: 3,
-        ..Default::default()
-    },
-    RecommendPoints {
-        collection_name: "{collection_name}".to_string(),
-        positive: vec![200.into(), 67.into()],
-        negative: vec![300.into()],
-        filter: Some(filter),
-        limit: 3,
-        ..Default::default()
-    },
+    QueryPointsBuilder::new("{collection_name}")
+        .query(
+            RecommendInputBuilder::default()
+                .add_positive(100)
+                .add_positive(231)
+                .add_negative(718)
+                .build(),
+        )
+        .filter(filter.clone())
+        .build(),
+    QueryPointsBuilder::new("{collection_name}")
+        .query(
+            RecommendInputBuilder::default()
+                .add_positive(200)
+                .add_positive(67)
+                .add_negative(300)
+                .build(),
+        )
+        .filter(filter)
+        .build(),
 ];
 
 client
-    .recommend_batch(&RecommendBatchPoints {
-        collection_name: "{collection_name}".to_string(),
-        recommend_points: recommend_queries,
-        ..Default::default()
-    })
+    .query_batch(QueryBatchPointsBuilder::new(
+        "{collection_name}",
+        recommend_queries,
+    ))
     .await?;
 ```
 
 ```java
 import java.util.List;
 
-import static io.qdrant.client.ConditionFactory.matchKeyword;
-import static io.qdrant.client.PointIdFactory.id;
-
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Points.Filter;
-import io.qdrant.client.grpc.Points.RecommendPoints;
+import io.qdrant.client.grpc.Points.QueryPoints;
+import io.qdrant.client.grpc.Points.RecommendInput;
+
+import static io.qdrant.client.ConditionFactory.matchKeyword;
+import static io.qdrant.client.VectorInputFactory.vectorInput;
+import static io.qdrant.client.QueryFactory.recommend;
 
 QdrantClient client =
     new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
 
 Filter filter = Filter.newBuilder().addMust(matchKeyword("city", "London")).build();
 
-List<RecommendPoints> recommendQueries =
-    List.of(
-        RecommendPoints.newBuilder()
-            .addAllPositive(List.of(id(100), id(231)))
-            .addAllNegative(List.of(id(718)))
-            .setFilter(filter)
-            .setLimit(3)
-            .build(),
-        RecommendPoints.newBuilder()
-            .addAllPositive(List.of(id(200), id(67)))
-            .addAllNegative(List.of(id(300)))
-            .setFilter(filter)
-            .setLimit(3)
-            .build());
-
-client.recommendBatchAsync("{collection_name}", recommendQueries, null).get();
+List<QueryPoints> recommendQueries = List.of(
+        QueryPoints.newBuilder()
+                .setCollectionName("{collection_name}")
+                .setQuery(recommend(
+                        RecommendInput.newBuilder()
+                                .addAllPositive(List.of(vectorInput(100), vectorInput(231)))
+                                .addAllNegative(List.of(vectorInput(731)))
+                                .build()))
+                .setFilter(filter)
+                .setLimit(3)
+                .build(),
+        QueryPoints.newBuilder()
+                .setCollectionName("{collection_name}")
+                .setQuery(recommend(
+                        RecommendInput.newBuilder()
+                                .addAllPositive(List.of(vectorInput(200), vectorInput(67)))
+                                .addAllNegative(List.of(vectorInput(300)))
+                                .build()))
+                .setFilter(filter)
+                .setLimit(3)
+                .build());
+                
+client.queryBatchAsync("{collection_name}", recommendQueries).get();
 ```
 
 ```csharp
@@ -612,23 +702,27 @@ var client = new QdrantClient("localhost", 6334);
 
 var filter = MatchKeyword("city", "london");
 
-await client.RecommendBatchAsync(
+await client.QueryBatchAsync(
 	collectionName: "{collection_name}",
-	recommendSearches:
+	queries:
 	[
-		new()
+		new QueryPoints()
 		{
 			CollectionName = "{collection_name}",
-			Positive = { new PointId[] { 100, 231 } },
-			Negative = { new PointId[] { 718 } },
+			Query = new RecommendInput {
+                Positive = { 100, 231 },
+                Negative = { 718 },
+            },
 			Limit = 3,
 			Filter = filter,
 		},
-		new()
+        		new QueryPoints()
 		{
 			CollectionName = "{collection_name}",
-			Positive = { new PointId[] { 200, 67 } },
-			Negative = { new PointId[] { 300 } },
+			Query = new RecommendInput {
+                Positive = { 200, 67 },
+                Negative = { 300 },
+            },
 			Limit = 3,
 			Filter = filter,
 		}
@@ -698,20 +792,23 @@ where $s(v)$ is the similarity function, $v_t$ is the target vector, and again $
 Example:
 
 ```http
-POST /collections/{collection_name}/points/discover
-
+POST /collections/{collection_name}/points/query
 {
-  "target": [0.2, 0.1, 0.9, 0.7],
-  "context": [
-    {
-      "positive": 100,
-      "negative": 718
-    },
-    {
-      "positive": 200,
-      "negative": 300
+  "query": {
+    "discover": {
+      "target": [0.2, 0.1, 0.9, 0.7],
+      "context": [
+        {
+          "positive": 100,
+          "negative": 718
+        },
+        {
+          "positive": 200,
+          "negative": 300
+        }
+      ]
     }
-  ],
+  },
   "limit": 10
 }
 ```
@@ -722,18 +819,22 @@ from qdrant_client import QdrantClient, models
 client = QdrantClient(url="http://localhost:6333")
 
 discover_queries = [
-    models.DiscoverRequest(
-        target=[0.2, 0.1, 0.9, 0.7],
-        context=[
-            models.ContextExamplePair(
-                positive=100,
-                negative=718,
-            ),
-            models.ContextExamplePair(
-                positive=200,
-                negative=300,
-            ),
-        ],
+    models.QueryRequest(
+        query=models.DiscoverQuery(
+            discover=models.DiscoverInput(
+                target=[0.2, 0.1, 0.9, 0.7],
+                context=[
+                    models.ContextPair(
+                        positive=100,
+                        negative=718,
+                    ),
+                    models.ContextPair(
+                        positive=200,
+                        negative=300,
+                    ),
+                ],
+            )
+        ),
         limit=10,
     ),
 ]
@@ -744,104 +845,79 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 
 const client = new QdrantClient({ host: "localhost", port: 6333 });
 
-client.discover("{collection_name}", {
-    target: [0.2, 0.1, 0.9, 0.7],
-    context: [
-    {
-        positive: 100,
-        negative: 718,
+client.query("{collection_name}", {
+    query: {
+        discover: {
+            target: [0.2, 0.1, 0.9, 0.7],
+            context: [
+                {
+                    positive: 100,
+                    negative: 718,
+                },
+                {
+                    positive: 200,
+                    negative: 300,
+                },
+            ],
+        }
     },
-    {
-        positive: 200,
-        negative: 300,
-    },
-    ],
     limit: 10,
 });
 ```
 
 ```rust
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{
-        target_vector::Target, vector_example::Example, ContextExamplePair, DiscoverPoints,
-        TargetVector, VectorExample,
-    },
-};
-
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+use qdrant_client::qdrant::{ContextInputBuilder, DiscoverInputBuilder, QueryPointsBuilder};
+use qdrant_client::Qdrant;
 
 client
-    .discover(&DiscoverPoints {
-        collection_name: "{collection_name}".to_string(),
-        target: Some(TargetVector {
-            target: Some(Target::Single(VectorExample {
-                example: Some(Example::Vector(vec![0.2, 0.1, 0.9, 0.7].into())),
-            })),
-        }),
-        context: vec![
-            ContextExamplePair {
-                positive: Some(VectorExample {
-                    example: Some(Example::Id(100.into())),
-                }),
-                negative: Some(VectorExample {
-                    example: Some(Example::Id(718.into())),
-                }),
-            },
-            ContextExamplePair {
-                positive: Some(VectorExample {
-                    example: Some(Example::Id(200.into())),
-                }),
-                negative: Some(VectorExample {
-                    example: Some(Example::Id(300.into())),
-                }),
-            },
-        ],
-        limit: 10,
-        ..Default::default()
-    })
+    .query(
+        QueryPointsBuilder::new("{collection_name}").query(
+            DiscoverInputBuilder::new(
+                vec![0.2, 0.1, 0.9, 0.7],
+                ContextInputBuilder::default()
+                    .add_pair(100, 718)
+                    .add_pair(200, 300),
+            )
+            .build(),
+        ),
+    )
     .await?;
 ```
 
 ```java
 import java.util.List;
 
-import static io.qdrant.client.PointIdFactory.id;
-import static io.qdrant.client.VectorFactory.vector;
-
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.ContextExamplePair;
-import io.qdrant.client.grpc.Points.DiscoverPoints;
-import io.qdrant.client.grpc.Points.TargetVector;
-import io.qdrant.client.grpc.Points.VectorExample;
+import io.qdrant.client.grpc.Points.ContextInput;
+import io.qdrant.client.grpc.Points.ContextInputPair;
+import io.qdrant.client.grpc.Points.DiscoverInput;
+import io.qdrant.client.grpc.Points.QueryPoints;
+
+import static io.qdrant.client.VectorInputFactory.vectorInput;
+import static io.qdrant.client.QueryFactory.discover;
 
 QdrantClient client =
     new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
 
-client
-    .discoverAsync(
-        DiscoverPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .setTarget(
-                TargetVector.newBuilder()
-                    .setSingle(
-                        VectorExample.newBuilder()
-                            .setVector(vector(0.2f, 0.1f, 0.9f, 0.7f))
-                            .build()))
-            .addAllContext(
-                List.of(
-                    ContextExamplePair.newBuilder()
-                        .setPositive(VectorExample.newBuilder().setId(id(100)))
-                        .setNegative(VectorExample.newBuilder().setId(id(718)))
-                        .build(),
-                    ContextExamplePair.newBuilder()
-                        .setPositive(VectorExample.newBuilder().setId(id(200)))
-                        .setNegative(VectorExample.newBuilder().setId(id(300)))
-                        .build()))
-            .setLimit(10)
-            .build())
-    .get();
+client.queryAsync(QueryPoints.newBuilder()
+        .setCollectionName("{collection_name}")
+        .setQuery(discover(DiscoverInput.newBuilder()
+                .setTarget(vectorInput(0.2f, 0.1f, 0.9f, 0.7f))
+                .setContext(ContextInput.newBuilder()
+                        .addAllPairs(List.of(
+                                ContextInputPair.newBuilder()
+                                        .setPositive(vectorInput(100))
+                                        .setNegative(vectorInput(718))
+                                        .build(),
+                                ContextInputPair.newBuilder()
+                                        .setPositive(vectorInput(200))
+                                        .setNegative(vectorInput(300))
+                                        .build()))
+                        .build())
+                .build()))
+        .setLimit(10)
+        .build()).get();
 ```
 
 ```csharp
@@ -850,25 +926,23 @@ using Qdrant.Client.Grpc;
 
 var client = new QdrantClient("localhost", 6334);
 
-await client.DiscoverAsync(
+await client.QueryAsync(
 	collectionName: "{collection_name}",
-	target: new TargetVector
-	{
-		Single = new VectorExample { Vector = new float[] { 0.2f, 0.1f, 0.9f, 0.7f }, }
-	},
-	context:
-	[
-		new()
-		{
-			Positive = new VectorExample { Id = 100 },
-			Negative = new VectorExample { Id = 718 }
-		},
-		new()
-		{
-			Positive = new VectorExample { Id = 200 },
-			Negative = new VectorExample { Id = 300 }
-		}
-	],
+	query: new DiscoverInput {
+        Target = new float[] { 0.2f, 0.1f, 0.9f, 0.7f },
+        Context = new ContextInput {
+            Pairs = {
+                new ContextInputPair {
+                    Positive = 100,
+                    Negative = 718
+                },
+                new ContextInputPair {
+                    Positive = 200,
+                    Negative = 300
+                },
+            }   
+        },
+    },
 	limit: 10
 );
 ```
@@ -901,19 +975,20 @@ Using this kind of search, you can expect the output to not necessarily be aroun
 Example:
 
 ```http
-POST /collections/{collection_name}/points/discover
-
+POST /collections/{collection_name}/points/query
 {
-  "context": [
-    {
-      "positive": 100,
-      "negative": 718
-    },
-    {
-      "positive": 200,
-      "negative": 300
-    }
-  ],
+  "query": {
+    "context": [
+      {
+        "positive": 100,
+        "negative": 718
+      },
+      {
+        "positive": 200,
+        "negative": 300
+      }
+    ]
+  },
   "limit": 10
 }
 ```
@@ -924,17 +999,19 @@ from qdrant_client import QdrantClient, models
 client = QdrantClient(url="http://localhost:6333")
 
 discover_queries = [
-    models.DiscoverRequest(
-        context=[
-            models.ContextExamplePair(
-                positive=100,
-                negative=718,
-            ),
-            models.ContextExamplePair(
-                positive=200,
-                negative=300,
-            ),
-        ],
+    models.QueryRequest(
+        query=models.ContextQuery(
+            context=[
+                models.ContextPair(
+                    positive=100,
+                    negative=718,
+                ),
+                models.ContextPair(
+                    positive=200,
+                    negative=300,
+                ),
+            ],
+        ),
         limit=10,
     ),
 ]
@@ -945,87 +1022,71 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 
 const client = new QdrantClient({ host: "localhost", port: 6333 });
 
-client.discover("{collection_name}", {
-    context: [
-    {
-        positive: 100,
-        negative: 718,
+client.query("{collection_name}", {
+    query: {
+        context: [
+            {
+                positive: 100,
+                negative: 718,
+            },
+            {
+                positive: 200,
+                negative: 300,
+            },
+        ]
     },
-    {
-        positive: 200,
-        negative: 300,
-    },
-    ],
     limit: 10,
 });
 ```
 
 ```rust
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{vector_example::Example, ContextExamplePair, DiscoverPoints, VectorExample},
-};
+use qdrant_client::qdrant::{ContextInputBuilder, QueryPointsBuilder};
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 client
-    .discover(&DiscoverPoints {
-        collection_name: "{collection_name}".to_string(),
-        context: vec![
-            ContextExamplePair {
-                positive: Some(VectorExample {
-                    example: Some(Example::Id(100.into())),
-                }),
-                negative: Some(VectorExample {
-                    example: Some(Example::Id(718.into())),
-                }),
-            },
-            ContextExamplePair {
-                positive: Some(VectorExample {
-                    example: Some(Example::Id(200.into())),
-                }),
-                negative: Some(VectorExample {
-                    example: Some(Example::Id(300.into())),
-                }),
-            },
-        ],
-        limit: 10,
-        ..Default::default()
-    })
+    .query(
+        QueryPointsBuilder::new("{collection_name}").query(
+            ContextInputBuilder::default()
+                .add_pair(100, 718)
+                .add_pair(200, 300)
+                .build(),
+        ),
+    )
     .await?;
 ```
 
 ```java
 import java.util.List;
 
-import static io.qdrant.client.PointIdFactory.id;
-
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.ContextExamplePair;
-import io.qdrant.client.grpc.Points.DiscoverPoints;
-import io.qdrant.client.grpc.Points.VectorExample;
+import io.qdrant.client.grpc.Points.ContextInput;
+import io.qdrant.client.grpc.Points.ContextInputPair;
+import io.qdrant.client.grpc.Points.QueryPoints;
+
+import static io.qdrant.client.VectorInputFactory.vectorInput;
+import static io.qdrant.client.QueryFactory.context;
 
 QdrantClient client =
     new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
 
-client
-    .discoverAsync(
-        DiscoverPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .addAllContext(
-                List.of(
-                    ContextExamplePair.newBuilder()
-                        .setPositive(VectorExample.newBuilder().setId(id(100)))
-                        .setNegative(VectorExample.newBuilder().setId(id(718)))
-                        .build(),
-                    ContextExamplePair.newBuilder()
-                        .setPositive(VectorExample.newBuilder().setId(id(200)))
-                        .setNegative(VectorExample.newBuilder().setId(id(300)))
-                        .build()))
-            .setLimit(10)
-            .build())
-    .get();
+client.queryAsync(QueryPoints.newBuilder()
+        .setCollectionName("{collection_name}")
+        .setQuery(context(ContextInput.newBuilder()
+                .addAllPairs(List.of(
+                        ContextInputPair.newBuilder()
+                                .setPositive(vectorInput(100))
+                                .setNegative(vectorInput(718))
+                                .build(),
+                        ContextInputPair.newBuilder()
+                                .setPositive(vectorInput(200))
+                                .setNegative(vectorInput(300))
+                                .build()))
+                .build()))
+        .setLimit(10)
+        .build()).get();
 ```
 
 ```csharp
@@ -1034,21 +1095,20 @@ using Qdrant.Client.Grpc;
 
 var client = new QdrantClient("localhost", 6334);
 
-await client.DiscoverAsync(
+await client.QueryAsync(
   collectionName: "{collection_name}",
-  context:
-  [
-    new()
-    {
-      Positive = new VectorExample { Id = 100 },
-      Negative = new VectorExample { Id = 718 }
-    },
-    new()
-    {
-      Positive = new VectorExample { Id = 200 },
-      Negative = new VectorExample { Id = 300 }
+  query: new ContextInput {
+    Pairs = {
+      new ContextInputPair {
+        Positive = 100,
+          Negative = 718
+      },
+      new ContextInputPair {
+        Positive = 200,
+          Negative = 300
+      },
     }
-  ],
+  },
   limit: 10
 );
 ```

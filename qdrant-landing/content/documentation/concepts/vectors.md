@@ -2,7 +2,7 @@
 title: Vectors
 weight: 41
 aliases:
-  - ../vectors
+  - /vectors
 ---
 
 
@@ -19,7 +19,7 @@ If two images are similar, their vectors will be close to each other in the vect
 In order to obtain a vector representation of an object, you need to apply a vectorization algorithm to the object.
 Usually, this algorithm is a neural network that converts the object into a fixed-size vector.
 
-The neural network is usually [trained](../articles/metric-learning-tips/) on a pairs or [triplets](../articles/triplet-loss/) of similar and dissimilar objects, so it learns to recognize a specific type of similarity.
+The neural network is usually [trained](/articles/metric-learning-tips/) on a pairs or [triplets](/articles/triplet-loss/) of similar and dissimilar objects, so it learns to recognize a specific type of similarity.
 
 By using this property of vectors, you can explore your data in a number of ways; e.g. by searching for similar objects, clustering objects, and more.
 
@@ -58,7 +58,7 @@ It looks like this:
 ```
 
 The majority of neural networks create dense vectors, so you can use them with Qdrant without any additional processing.
-Although compatible with most embedding models out there, Qdrant has been tested with the following [verified embedding providers](../embeddings/).
+Although compatible with most embedding models out there, Qdrant has been tested with the following [verified embedding providers](/documentation/embeddings/).
 
 ### Sparse Vectors
 
@@ -127,29 +127,22 @@ client.createCollection("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::{
-    Qdrant,
-    qdrant::{
-        CreateCollectionBuilder,
-        SparseVectorsConfigBuilder,
-        SparseVectorParamsBuilder,
-    },
+use qdrant_client::qdrant::{
+    CreateCollectionBuilder, SparseVectorParamsBuilder, SparseVectorsConfigBuilder,
 };
 
+use qdrant_client::Qdrant;
 
 let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 let mut sparse_vectors_config = SparseVectorsConfigBuilder::default();
 
-sparse_vectors_config.add_named_vector_params(
-    "text",
-    SparseVectorParamsBuilder::default()
-);
+sparse_vectors_config.add_named_vector_params("text", SparseVectorParamsBuilder::default());
 
 client
     .create_collection(
-        CreateCollectionBuilder::new(collection_name)
-            .sparse_vectors_config(sparse_vectors_config)
+        CreateCollectionBuilder::new("{collection_name}")
+            .sparse_vectors_config(sparse_vectors_config),
     )
     .await?;
 ```
@@ -248,35 +241,24 @@ client.upsert("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::qdrant::{
-    PointStruct,
-    UpsertPointsBuilder,
-    NamedVectors,
-    Vector,
-};
-use qdrant_client::{Qdrant, Payload};
+use qdrant_client::qdrant::{NamedVectors, PointStruct, UpsertPointsBuilder, Vector};
 
+use qdrant_client::{Payload, Qdrant};
 
 let client = Qdrant::from_url("http://localhost:6334").build()?;
 
-let points = vec![
-    PointStruct::new(
-        129,
-        NamedVectors::default().add_vector(
-            "text",
-            Vector::new_sparse(
-                vec![1, 3, 5, 7],
-                vec![0.1, 0.2, 0.3, 0.4]
-            )
-        ),
-        Payload::new()
-    )
-];
+let points = vec![PointStruct::new(
+    129,
+    NamedVectors::default().add_vector(
+        "text",
+        Vector::new_sparse(vec![1, 3, 5, 7], vec![0.1, 0.2, 0.3, 0.4]),
+    ),
+    Payload::new(),
+)];
 
 client
-    .upsert_points(
-        UpsertPointsBuilder::new("{collection_name}", points)
-    ).await?;
+    .upsert_points(UpsertPointsBuilder::new("{collection_name}", points))
+    .await?;
 ```
 
 ```java
@@ -330,15 +312,13 @@ await client.UpsertAsync(
 Now you can run a search with sparse vectors:
 
 ```http
-POST /collections/{collection_name}/points/search
+POST /collections/{collection_name}/points/query
 {
-    "vector": {
-        "name": "text",
-        "vector": {
-            "indices": [1, 3, 5, 7],
-            "values": [0.1, 0.2, 0.3, 0.4]
-        }
-    }
+    "query": {
+        "indices": [1, 3, 5, 7],
+        "values": [0.1, 0.2, 0.3, 0.4]
+    },
+    "using": "text"
 }
 ```
 
@@ -348,29 +328,25 @@ from qdrant_client import QdrantClient, models
 client = QdrantClient(url="http://localhost:6333")
 
 
-result = client.search(
+result = client.query_points(
     collection_name="{collection_name}",
-    query_vector=models.NamedSparseVector(
-        name="text",
-        vector=models.SparseVector(
-            indices=[1, 3, 5, 7],
-            values=[0.1, 0.2, 0.3, 0.4]
-        ),
-    )
-)
+    query_vector=models.SparseVector(indices=[1, 3, 5, 7], values=[0.1, 0.2, 0.3, 0.4]),
+    using="text",
+).points
 ```
 
 ```rust
-use qdrant_client::qdrant::SearchPointsBuilder;
+use qdrant_client::qdrant::QueryPointsBuilder;
 use qdrant_client::Qdrant;
 
 let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 client
-    .search_points(
-        SearchPointsBuilder::new("{collection_name}", vec![0.2, 0.1, 0.9, 0.7], 10)
-            .sparse_indices(vec![1, 3, 5, 7])
-            .vector_name("text")
+    .query(
+        QueryPointsBuilder::new("{collection_name}")
+            .query(vec![(1, 0.2), (3, 0.1), (5, 0.9), (7, 0.7)])
+            .limit(10)
+            .using("text"),
     )
     .await?;
 ```
@@ -380,15 +356,13 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 
 const client = new QdrantClient({ host: "localhost", port: 6333 });
 
-client.search("{collection_name}", {
-  vector: {
-    name: "text",
-    vector: {
+client.query("{collection_name}", {
+    query: {
         indices: [1, 3, 5, 7],
         values: [0.1, 0.2, 0.3, 0.4]
     },
-  },
-  limit: 3,
+    using: "text",
+    limit: 3,
 });
 ```
 
@@ -397,23 +371,21 @@ import java.util.List;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.SearchPoints;
-import io.qdrant.client.grpc.Points.SparseIndices;
-import io.qdrant.client.grpc.Points.Vectors;
+import io.qdrant.client.grpc.Points.QueryPoints;
+
+import static io.qdrant.client.QueryFactory.nearest;
 
 QdrantClient client =
   new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
 
-client
-  .searchAsync(
-    SearchPoints.newBuilder()
-    .setCollectionName("{collection_name}")
-    .setVectorName("text")
-    .addAllVector(List.of(0.1f, 0.2f, 0.3f, 0.4f))
-    .setSparseIndices(SparseIndices.newBuilder().addAllData(List.of(1, 3, 5, 7)).build())
-    .setLimit(3)
-    .build())
-  .get();
+client.queryAsync(
+        QueryPoints.newBuilder()
+                .setCollectionName("{collection_name}")
+                .setUsing("text")
+                .setQuery(nearest(List.of(0.1f, 0.2f, 0.3f, 0.4f), List.of(1, 3, 5, 7)))
+                .setLimit(3)
+                .build())
+        .get();
 ```
 
 ```csharp
@@ -421,12 +393,11 @@ using Qdrant.Client;
 
 var client = new QdrantClient("localhost", 6334);
 
-await client.SearchAsync(
+await client.QueryAsync(
   collectionName: "{collection_name}",
-  vector: new float[] {0.1f, 0.2f, 0.3f, 0.4f},
-  vectorName: "text",
-  limit: 3,
-  sparseIndices: new uint[] {1, 3, 5, 7}
+  query: new (float, uint)[] {(0.1f, 1), (0.2f, 3), (0.3f, 5), (0.4f, 7)},
+  usingVector: "text",
+  limit: 3
 );
 ```
 
@@ -434,8 +405,8 @@ await client.SearchAsync(
 
 **Available as of v1.10.0**
 
-Qdrant supports the storing of a variable amount of same-shaped dense vectors in a single point.
-That means that instead of a single dense vector, you can upload a matrix of dense vectors.
+Qdrant supports the storing of a variable amount of same-shaped dense vectors in a single point. 
+This means that instead of a single dense vector, you can upload a matrix of dense vectors.
 
 The length of the matrix is fixed, but the number of vectors in the matrix can be different for each point.
 
@@ -812,6 +783,7 @@ await client.QueryAsync(
 Aside from storing multiple vectors of the same shape in a single point, Qdrant supports storing multiple different vectors in a single point.
 
 Each of these vectors should have a unique configuration and should be addressed by a unique name.
+Also, each vector can be of a different type and be generated by a different embedding model.
 
 To create a collection with named vectors, you need to specify a configuration for each vector:
 
@@ -879,28 +851,19 @@ client.createCollection("{collection_name}", {
 
 ```rust
 use qdrant_client::qdrant::{
-    VectorsConfigBuilder,
-    Distance,
-    VectorParamsBuilder
+    CreateCollectionBuilder, Distance, VectorParamsBuilder, VectorsConfigBuilder,
 };
+use qdrant_client::Qdrant;
 
 let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 let mut vector_config = VectorsConfigBuilder::default();
-
-vector_config.add_named_vector_params(
-    "text",
-    VectorParamsBuilder::new(4, Distance::Dot),
-);
-vector_config.add_named_vector_params(
-    "image",
-    VectorParamsBuilder::new(8, Distance::Cosine),
-);
+vector_config.add_named_vector_params("text", VectorParamsBuilder::new(4, Distance::Dot));
+vector_config.add_named_vector_params("image", VectorParamsBuilder::new(8, Distance::Cosine));
 
 client
     .create_collection(
-        CreateCollectionBuilder::new("{collection_name}")
-            .vectors_config(vector_config)
+        CreateCollectionBuilder::new("{collection_name}").vectors_config(vector_config),
     )
     .await?;
 ```
@@ -1049,30 +1012,24 @@ client.createCollection("{collection_name}", {
 ```
 
 ```rust
-
 use qdrant_client::qdrant::{
-    CreateCollectionBuilder,
-    Distance,
-    SparseIndexConfigBuilder,
-    SparseVectorParamsBuilder,
-    VectorParamsBuilder,
-    Datatype,
+    CreateCollectionBuilder, Datatype, Distance, SparseIndexConfigBuilder, SparseVectorParamsBuilder, SparseVectorsConfigBuilder, VectorParamsBuilder
 };
+use qdrant_client::Qdrant;
 
 let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 let mut sparse_vector_config = SparseVectorsConfigBuilder::default();
-
 sparse_vector_config.add_named_vector_params(
     "text",
     SparseVectorParamsBuilder::default()
         .index(SparseIndexConfigBuilder::default().datatype(Datatype::Float32)),
 );
-let create_collection = CreateCollectionBuilder::new(collection_name)
+
+let create_collection = CreateCollectionBuilder::new("{collection_name}")
     .sparse_vectors_config(sparse_vector_config)
     .vectors_config(
-        VectorParamsBuilder::new(128, Distance::Cosine)
-            .datatype(Datatype::Float16)
+        VectorParamsBuilder::new(128, Distance::Cosine).datatype(Datatype::Float16),
     );
 
 client.create_collection(create_collection).await?;
@@ -1220,15 +1177,12 @@ client.createCollection("{collection_name}", {
 ```
 
 ```rust
-
 use qdrant_client::qdrant::{
-    CreateCollectionBuilder,
-    Distance,
-    SparseIndexConfigBuilder,
-    SparseVectorParamsBuilder,
-    VectorParamsBuilder,
-    Datatype,
+    CreateCollectionBuilder, Datatype, Distance, SparseIndexConfigBuilder,
+    SparseVectorParamsBuilder, SparseVectorsConfigBuilder, VectorParamsBuilder,
 };
+
+use qdrant_client::Qdrant;
 
 let client = Qdrant::from_url("http://localhost:6334").build()?;
 
@@ -1239,7 +1193,7 @@ sparse_vector_config.add_named_vector_params(
     SparseVectorParamsBuilder::default()
         .index(SparseIndexConfigBuilder::default().datatype(Datatype::Uint8)),
 );
-let create_collection = CreateCollectionBuilder::new(collection_name)
+let create_collection = CreateCollectionBuilder::new("{collection_name}")
     .sparse_vectors_config(sparse_vector_config)
     .vectors_config(
         VectorParamsBuilder::new(128, Distance::Cosine)
@@ -1313,16 +1267,16 @@ await client.CreateCollectionAsync(
 ## Quantization
 
 Apart from changing the datatype of the original vectors, Qdrant can create quantized representations of vectors alongside the original ones.
-This quantized representation can be used to quickly select candidates for rescoring with the original vectors, or even used directly for search.
+This quantized representation can be used to quickly select candidates for rescoring with the original vectors or even used directly for search.
 
 Quantization is applied in the background, during the optimization process.
 
-More information about the quantization process can be found in the [Quantization](../guides/quantization/) section.
+More information about the quantization process can be found in the [Quantization](/documentation/guides/quantization/) section.
 
 
 ## Vector Storage
 
 Depending on the requirements of the application, Qdrant can use one of the data storage options.
-Keep in mind that youu will have to tradeoff between search speed and the size of RAM used.
+Keep in mind that you will have to tradeoff between search speed and the size of RAM used.
 
-More information about the storage options can be found in the [Storage](../concepts/storage/#vector-storage) section.
+More information about the storage options can be found in the [Storage](/documentation/concepts/storage/#vector-storage) section.

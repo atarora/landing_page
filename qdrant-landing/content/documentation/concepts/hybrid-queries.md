@@ -32,11 +32,25 @@ One of the most common problems when you have different representations of the s
 For example, in text search, it is often useful to combine dense and sparse vectors get the best of semantics,
 plus the best of matching specific words.
 
-There are many ways to fuse the results. One versatile method is <a href=https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf target="_blank">Reciprocal Rank Fusion (RRF)</a>, 
-which considers the positions of each of points in the results, and boosts the ones that appear closer to the top in multiple queries.
+Qdrant currently has two ways of combining the results from different queries:
 
+- `rrf` - 
+<a href=https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf target="_blank">
+Reciprocal Rank Fusion
+</a>
 
-Here is an example of RRF for a query containing two prefetches against different named vectors configured to respectively hold sparse and dense vectors. 
+  Considers the positions of results within each query, and boosts the ones that appear closer to the top in multiple of them.
+  
+- `dbsf` - 
+<a href=https://medium.com/plain-simple-software/distribution-based-score-fusion-dbsf-a-new-approach-to-vector-search-ranking-f87c37488b18 target="_blank">
+Distribution-Based Score Fusion
+</a> *(available as of v1.11.0)*
+
+  Normalizes the scores of the points in each query, using the mean +/- the 3rd standard deviation as limits, and then sums the scores of the same point across different queries.
+  
+  <aside role="status"><code>dbsf</code> is stateless and calculates the normalization limits only based on the results of each query, not on all the scores that it has seen.</aside>
+
+Here is an example of Reciprocal Rank Fusion for a query containing two prefetches against different named vectors configured to respectively hold sparse and dense vectors. 
 
 ```http
 POST /collections/{collection_name}/points/query
@@ -48,12 +62,12 @@ POST /collections/{collection_name}/points/query
                 "values": [0.22, 0.8]  // <┴─sparse vector
              },
             "using": "sparse",
-            "limit": 20,
+            "limit": 20
         },
         {
             "query": [0.01, 0.45, 0.67, ...], // <-- dense vector
             "using": "dense",
-            "limit": 20,
+            "limit": 20
         }
     ],
     "query": { "fusion": "rrf" }, // <--- reciprocal rank fusion
@@ -222,7 +236,7 @@ POST /collections/{collection_name}/points/query
     "prefetch": {
         "query": [1, 23, 45, 67], // <------------- small byte vector
         "using": "mrl_byte"
-        "limit": 1000,
+        "limit": 1000
     },
     "query": [0.01, 0.299, 0.45, 0.67, ...], // <-- full vector
     "using": "full",
@@ -340,7 +354,7 @@ POST /collections/{collection_name}/points/query
 {
     "prefetch": {
         "query": [0.01, 0.45, 0.67, ...], // <-- dense vector
-        "limit": 100,
+        "limit": 100
     },
     "query": [           // <─┐
         [0.1, 0.2, ...], // < │
@@ -482,11 +496,11 @@ POST /collections/{collection_name}/points/query
         "prefetch": {
             "query": [1, 23, 45, 67], // <------ small byte vector
             "using": "mrl_byte"
-            "limit": 1000,
+            "limit": 1000
         },
         "query": [0.01, 0.45, 0.67, ...], // <-- full dense vector
         "using": "full"
-        "limit": 100,
+        "limit": 100
     },
     "query": [           // <─┐
         [0.1, 0.2, ...], // < │
@@ -1065,3 +1079,103 @@ In this example, we first fetch 10 points with the color `"red"` and then 10 poi
 Then, we order the results by the price field.
 
 This is how we can guarantee even sampling of both colors in the results and also get the cheapest ones first.
+
+## Grouping
+
+*Available as of v1.11.0*
+
+It is possible to group results by a certain field. This is useful when you have multiple points for the same item, and you want to avoid redundancy of the same item in the results.
+
+REST API ([Schema](https://api.qdrant.tech/master/api-reference/search/query-points-groups)):
+
+```http
+POST /collections/{collection_name}/points/query/groups
+{
+    "query": [0.01, 0.45, 0.67],
+    group_by="document_id",  # Path of the field to group by
+    limit=4,  # Max amount of groups
+    group_size=2,  # Max amount of points per group
+}
+```
+
+```python
+from qdrant_client import QdrantClient, models
+
+client = QdrantClient(url="http://localhost:6333")
+
+client.query_points_groups(
+    collection_name="{collection_name}",
+    query=[0.01, 0.45, 0.67],
+    group_by="document_id",
+    limit=4,
+    group_size=2,
+)
+```
+
+```typescript
+import { QdrantClient } from "@qdrant/js-client-rest";
+
+const client = new QdrantClient({ host: "localhost", port: 6333 });
+
+client.queryGroups("{collection_name}", {
+    query: [0.01, 0.45, 0.67],
+    group_by: "document_id",
+    limit: 4,
+    group_size: 2,
+});
+```
+
+```rust
+use qdrant_client::Qdrant;
+use qdrant_client::qdrant::{Query, QueryPointsBuilder};
+
+let client = Qdrant::from_url("http://localhost:6334").build()?;
+
+client.query_groups(
+    QueryPointGroupsBuilder::new("{collection_name}", "document_id")
+        .query(Query::from(vec![0.01, 0.45, 0.67]))
+        .limit(4u64)
+        .group_size(2u64)
+).await?;
+```
+
+```java
+import static io.qdrant.client.QueryFactory.nearest;
+
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.QdrantGrpcClient;
+import io.qdrant.client.grpc.Points.QueryPointGroups;
+
+QdrantClient client =
+    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
+
+client
+    .queryGroupsAsync(
+        QueryPointGroups.newBuilder()
+            .setCollectionName("{collection_name}")
+            .setGroupBy("document_id")
+            .setQuery(nearest(0.01f, 0.45f, 0.67f))
+            .setLimit(4)
+            .setGroupSize(2)
+            .build())
+    .get();
+```
+
+```csharp
+using Qdrant.Client;
+using Qdrant.Client.Grpc;
+
+var client = new QdrantClient("localhost", 6334);
+
+await client.QueryGroupsAsync(
+  collectionName: "{collection_name}",
+  groupBy: "document_id",
+  query: new float[] {
+    0.01f, 0.45f, 0.67f
+  },
+  limit: 4,
+  groupSize: 2
+);
+```
+
+For more information on the `grouping` capabilities refer to the reference documentation for search with [grouping](./search/#search-groups) and [lookup](./search/#lookup-in-groups).

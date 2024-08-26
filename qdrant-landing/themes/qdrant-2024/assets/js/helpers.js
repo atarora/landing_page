@@ -76,3 +76,25 @@ export function devLog(str) {
     console.log(str)
   }
 }
+
+const CROSS_SITE_URL_PARAM_KEY = 'ajs_anonymous_id';
+export function tagCloudUILinksWithAnonymousId() {
+  const targetUrl = 'https://cloud.qdrant.io/';
+
+  const anonymousId = analytics.user().anonymousId();
+  
+  // Function to add or update query parameter in the URL
+  function addOrUpdateQueryParam(url, paramName, paramValue) {
+    const urlObj = new URL(url, window.location.origin); // Ensures URL is absolute
+    urlObj.searchParams.set(paramName, paramValue);
+    return urlObj.toString();
+  }
+
+  // Select all <a> elements with href exactly containing targetUrl
+  const links = document.querySelectorAll(`a[href*="${targetUrl}"]`);
+
+  // Loop through all selected <a> elements and update their href
+  links.forEach(link => {
+    link.href = addOrUpdateQueryParam(link.href, CROSS_SITE_URL_PARAM_KEY, anonymousId);
+  });
+}

@@ -94,46 +94,20 @@ client.upsert("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::{client::QdrantClient, qdrant::PointStruct};
-use serde_json::json;
+use qdrant_client::qdrant::{PointStruct, UpsertPointsBuilder};
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 client
-    .upsert_points_blocking(
-        "{collection_name}".to_string(),
-        None,
+    .upsert_points(UpsertPointsBuilder::new(
+        "{collection_name}",
         vec![
-            PointStruct::new(
-                1,
-                vec![0.9, 0.1, 0.1],
-                json!(
-                    {"group_id": "user_1"}
-                )
-                .try_into()
-                .unwrap(),
-            ),
-            PointStruct::new(
-                2,
-                vec![0.1, 0.9, 0.1],
-                json!(
-                    {"group_id": "user_1"}
-                )
-                .try_into()
-                .unwrap(),
-            ),
-            PointStruct::new(
-                3,
-                vec![0.1, 0.1, 0.9],
-                json!(
-                    {"group_id": "user_2"}
-                )
-                .try_into()
-                .unwrap(),
-            ),
+            PointStruct::new(1, vec![0.9, 0.1, 0.1], [("group_id", "user_1".into())]),
+            PointStruct::new(2, vec![0.1, 0.9, 0.1], [("group_id", "user_1".into())]),
+            PointStruct::new(3, vec![0.1, 0.1, 0.9], [("group_id", "user_2".into())]),
         ],
-        None,
-    )
+    ))
     .await?;
 ```
 
@@ -205,8 +179,9 @@ await client.UpsertAsync(
 2. Use a filter along with `group_id` to filter vectors for each user.
 
 ```http
-POST /collections/{collection_name}/points/search
+POST /collections/{collection_name}/points/query
 {
+    "query": [0.1, 0.1, 0.9],
     "filter": {
         "must": [
             {
@@ -217,7 +192,6 @@ POST /collections/{collection_name}/points/search
             }
         ]
     },
-    "vector": [0.1, 0.1, 0.9],
     "limit": 10
 }
 ```
@@ -227,8 +201,9 @@ from qdrant_client import QdrantClient, models
 
 client = QdrantClient(url="http://localhost:6333")
 
-client.search(
+client.query_points(
     collection_name="{collection_name}",
+    query=[0.1, 0.1, 0.9],
     query_filter=models.Filter(
         must=[
             models.FieldCondition(
@@ -239,7 +214,6 @@ client.search(
             )
         ]
     ),
-    query_vector=[0.1, 0.1, 0.9],
     limit=10,
 )
 ```
@@ -249,34 +223,31 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 
 const client = new QdrantClient({ host: "localhost", port: 6333 });
 
-client.search("{collection_name}", {
-  filter: {
-    must: [{ key: "group_id", match: { value: "user_1" } }],
-  },
-  vector: [0.1, 0.1, 0.9],
-  limit: 10,
+client.query("{collection_name}", {
+    query: [0.1, 0.1, 0.9],
+    filter: {
+        must: [{ key: "group_id", match: { value: "user_1" } }],
+    },
+    limit: 10,
 });
 ```
 
 ```rust
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{Condition, Filter, SearchPoints},
-};
+use qdrant_client::qdrant::{Condition, Filter, QueryPointsBuilder};
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 client
-    .search_points(&SearchPoints {
-        collection_name: "{collection_name}".to_string(),
-        filter: Some(Filter::must([Condition::matches(
-            "group_id",
-            "user_1".to_string(),
-        )])),
-        vector: vec![0.1, 0.1, 0.9],
-        limit: 10,
-        ..Default::default()
-    })
+    .query(
+        QueryPointsBuilder::new("{collection_name}")
+            .query(vec![0.1, 0.1, 0.9])
+            .limit(10)
+            .filter(Filter::must([Condition::matches(
+                "group_id",
+                "user_1".to_string(),
+            )])),
+    )
     .await?;
 ```
 
@@ -286,21 +257,23 @@ import java.util.List;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import io.qdrant.client.grpc.Points.Filter;
-import io.qdrant.client.grpc.Points.SearchPoints;
+import io.qdrant.client.grpc.Points.QueryPoints;
+
+import static io.qdrant.client.QueryFactory.nearest;
+import static io.qdrant.client.ConditionFactory.matchKeyword;
 
 QdrantClient client =
     new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
 
-client
-    .searchAsync(
-        SearchPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .setFilter(
-                Filter.newBuilder().addMust(matchKeyword("group_id", "user_1")).build())
-            .addAllVector(List.of(0.1f, 0.1f, 0.9f))
-            .setLimit(10)
-            .build())
-    .get();
+client.queryAsync(
+        QueryPoints.newBuilder()
+                .setCollectionName("{collection_name}")
+                .setFilter(
+                        Filter.newBuilder().addMust(matchKeyword("group_id", "user_1")).build())
+                .setQuery(nearest(0.1f, 0.1f, 0.9f))
+                .setLimit(10)
+                .build())
+        .get();
 ```
 
 ```csharp
@@ -310,9 +283,9 @@ using static Qdrant.Client.Grpc.Conditions;
 
 var client = new QdrantClient("localhost", 6334);
 
-await client.SearchAsync(
+await client.QueryAsync(
 	collectionName: "{collection_name}",
-	vector: new float[] { 0.1f, 0.1f, 0.9f },
+	query: new float[] { 0.1f, 0.1f, 0.9f },
 	filter: MatchKeyword("group_id", "user_1"),
 	limit: 10
 );
@@ -376,33 +349,19 @@ client.createCollection("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{
-        vectors_config::Config, CreateCollection, Distance, HnswConfigDiff, VectorParams,
-        VectorsConfig,
-    },
+use qdrant_client::qdrant::{
+    CreateCollectionBuilder, Distance, HnswConfigDiffBuilder, VectorParamsBuilder,
 };
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 client
-    .create_collection(&CreateCollection {
-        collection_name: "{collection_name}".to_string(),
-        vectors_config: Some(VectorsConfig {
-            config: Some(Config::Params(VectorParams {
-                size: 768,
-                distance: Distance::Cosine.into(),
-                ..Default::default()
-            })),
-        }),
-        hnsw_config: Some(HnswConfigDiff {
-            payload_m: Some(16),
-            m: Some(0),
-            ..Default::default()
-        }),
-        ..Default::default()
-    })
+    .create_collection(
+        CreateCollectionBuilder::new("{collection_name}")
+            .vectors_config(VectorParamsBuilder::new(768, Distance::Cosine))
+            .hnsw_config(HnswConfigDiffBuilder::default().payload_m(16).m(0)),
+    )
     .await?;
 ```
 
@@ -450,11 +409,19 @@ await client.CreateCollectionAsync(
 
 3. Create keyword payload index for `group_id` field.
 
+<aside role="alert">
+    <code>is_tenant</code> parameter is available as of v1.11.0. Previous versions should use default options for keyword index creation.
+</aside>
+
+
 ```http
 PUT /collections/{collection_name}/index
 {
     "field_name": "group_id",
-    "field_schema": "keyword"
+    "field_schema": {
+        "type": "keyword",
+        "is_tenant": true
+    }
 }
 ```
 
@@ -462,44 +429,69 @@ PUT /collections/{collection_name}/index
 client.create_payload_index(
     collection_name="{collection_name}",
     field_name="group_id",
-    field_schema=models.PayloadSchemaType.KEYWORD,
+    field_schema=models.KeywordIndexParams(
+        type="keywprd",
+        is_tenant=True,
+    ),
 )
 ```
 
 ```typescript
 client.createPayloadIndex("{collection_name}", {
   field_name: "group_id",
-  field_schema: "keyword",
+  field_schema: {
+    type: "keyword",
+    is_tenant: true,
+  },
 });
 ```
 
 ```rust
-use qdrant_client::{client::QdrantClient, qdrant::FieldType};
+use qdrant_client::qdrant::{
+    CreateFieldIndexCollectionBuilder,
+    KeywordIndexParamsBuilder,
+    FieldType
+};
+use qdrant_client::{Qdrant, QdrantError};
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
-client
-    .create_field_index(
-        "{collection_name}",
-        "group_id",
-        FieldType::Keyword,
-        None,
-        None,
-    )
-    .await?;
+client.create_field_index(
+        CreateFieldIndexCollectionBuilder::new(
+            "{collection_name}",
+            "group_id",
+            FieldType::Keyword,
+        ).field_index_params(
+            KeywordIndexParamsBuilder::default()
+                .is_tenant(true)
+        )
+    ).await?;
 ```
 
 ```java
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
+import io.qdrant.client.grpc.Collections.PayloadIndexParams;
 import io.qdrant.client.grpc.Collections.PayloadSchemaType;
+import io.qdrant.client.grpc.Collections.KeywordIndexParams;
 
 QdrantClient client =
     new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
 
 client
     .createPayloadIndexAsync(
-        "{collection_name}", "group_id", PayloadSchsemaType.Keyword, null, null, null, null)
+        "{collection_name}",
+        "group_id",
+        PayloadSchemaType.Keyword,
+        PayloadIndexParams.newBuilder()
+            .setKeywordIndexParams(
+                KeywordIndexParams.newBuilder()
+                    .setIsTenant(true)
+                    .build())
+            .build(),
+        null,
+        null,
+        null)
     .get();
 ```
 
@@ -508,8 +500,24 @@ using Qdrant.Client;
 
 var client = new QdrantClient("localhost", 6334);
 
-await client.CreatePayloadIndexAsync(collectionName: "{collection_name}", fieldName: "group_id");
+await client.CreatePayloadIndexAsync(
+	collectionName: "{collection_name}",
+	fieldName: "group_id",
+	schemaType: PayloadSchemaType.Keyword,
+	indexParams: new PayloadIndexParams
+	{
+		KeywordIndexParams = new KeywordIndexParams
+		{
+			IsTenant = true
+		}
+	}
+);
+
 ```
+
+`is_tenant=true` parameter is optional, but specifying it provides storage with additional inforamtion about the usage patterns the collection is going to use.
+When specified, storage structure will be organized in a way to co-locate vectors of the same tenant together, which can significantly improve performance in some cases. 
+
 
 ## Limitations
 

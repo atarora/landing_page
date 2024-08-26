@@ -1,11 +1,11 @@
 ---
-title: Hybrid Cloud setup
+title: Setup Hybrid Cloud
 weight: 1
 ---
 
 # Creating a Hybrid Cloud Environment
 
-The following instruction set will show you how to properly setup a **Qdrant cluster** in your **Hybrid Cloud Environment**. 
+The following instruction set will show you how to properly set up a **Qdrant cluster** in your **Hybrid Cloud Environment**. 
 
 To learn how Hybrid Cloud works, [read the overview document](/documentation/hybrid-cloud/). 
 
@@ -22,6 +22,15 @@ To learn how Hybrid Cloud works, [read the overview document](/documentation/hyb
 
 > **Note:** You can also mirror these images and charts into your own registry and pull them from there.
 
+### CLI tools
+
+During the onboarding, you will need to deploy the Qdrant Kubernetes Operator and Agent using Helm. Make sure you have the following tools installed:
+
+* [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+* [helm](https://helm.sh/docs/intro/install/)
+
+You will need to have access to the Kubernetes cluster with `kubectl` and `helm` configured to connect to it. Please refer the documentation of your Kubernetes distribution for more information.
+
 ### Required artifacts
 
 Container images:
@@ -29,7 +38,7 @@ Container images:
 - `docker.io/qdrant/qdrant`
 - `registry.cloud.qdrant.io/qdrant/qdrant-cloud-agent`
 - `registry.cloud.qdrant.io/qdrant/qdrant-operator`
-- `registry.cloud.qdrant.io/qdrant/qdrant-cloud-cluster-manager`
+- `registry.cloud.qdrant.io/qdrant/cluster-manager`
 - `registry.cloud.qdrant.io/qdrant/prometheus`
 - `registry.cloud.qdrant.io/qdrant/prometheus-config-reloader`
 - `registry.cloud.qdrant.io/qdrant/kube-state-metrics`
@@ -38,6 +47,7 @@ Open Containers Initiative (OCI) Helm charts:
 
 - `registry.cloud.qdrant.io/qdrant-charts/qdrant-cloud-agent`
 - `registry.cloud.qdrant.io/qdrant-charts/qdrant-operator`
+- `registry.cloud.qdrant.io/qdrant-charts/qdrant-cluster-manager`
 - `registry.cloud.qdrant.io/qdrant-charts/prometheus`
 
 ## Installation
@@ -53,14 +63,15 @@ Open Containers Initiative (OCI) Helm charts:
 - **Name:** A name for the Hybrid Cloud Environment
 - **Kubernetes Namespace:** The Kubernetes namespace for the operator and agent. Once you select a namespace, you can't change it.
 
+You can also configure the StorageClass and VolumeSnapshotClass to use for the Qdrant databases, if you want to deviate from the default settings of your cluster.
+
 4. You can then enter the YAML configuration for your Kubernetes operator. Qdrant supports a specific list of configuration options, as described in the [Qdrant Operator configuration](/documentation/hybrid-cloud/operator-configuration/) section.
 
 5. (Optional) If you have special requirements for any of the following, activate the **Show advanced configuration** option:
 
-- Proxy server
+- If you use a proxy to connect from your infrastructure to the Qdrant Cloud API, you can specify the proxy URL, credentials and cetificates.
 - Container registry URL for Qdrant Operator and Agent images. The default is <https://registry.cloud.qdrant.io/qdrant/>.
 - Helm chart repository URL for the Qdrant Operator and Agent. The default is <oci://registry.cloud.qdrant.io/qdrant-charts>.
-- CA certificate
 - Log level for the operator and agent
 
 6. Once complete, click **Create**.
@@ -71,104 +82,14 @@ Open Containers Initiative (OCI) Helm charts:
 
 After creating your Hybrid Cloud, select **Generate Installation Command** to generate a script that you can run in your Kubernetes cluster which will perform the initial installation of the Kubernetes operator and agent. It will:
 
-- Create the Kubernetes namespace
+- Create the Kubernetes namespace, if not present
 - Set up the necessary secrets with credentials to access the Qdrant container registry and the Qdrant Cloud API.
 - Sign in to the Helm registry at `registry.cloud.qdrant.io`
 - Install the Qdrant cloud agent and Kubernetes operator chart
 
 You need this command only for the initial installation. After that, you can update the agent and operator using the Qdrant Cloud Console.
 
-> **Note:** If you generate the installation command a second time, it will re-generate the included secrets and you will have to apply the command again to update them.
-
-## Creating a Qdrant cluster
-
-Once you have created a Hybrid Cloud Environment, you can create a Qdrant cluster in that enviroment. Use the same process to [Create a cluster](/documentation/cloud/create-cluster/). Make sure to select your Hybrid Cloud Environment as the target.
-
-### Authentication at your Qdrant clusters
-
-In Hybrid Cloud the authentication information is provided with Kubernetes secrets.
-
-You can configure authentication for your Qdrant clusters in the "Configuration" section of the Qdrant Cluster detail page. There you can configure the Kubernetes secret name and key to be used as an API key and/or read-only API key.
-
-One way to create a secret is with kubectl:
-
-```shell
-kubectl create secret generic qdrant-api-key --from-literal=api-key=your-secret-api-key
-```
-
-With this command the secret name would be `qdrant-api-key` and the key would be `api-key`.
-
-If you want to retrieve the secret again, you can also use `kubectl`:
-
-```shell
-kubectl get secret qdrant-api-key -o jsonpath="{.data.api-key}" | base64 --decode
-```
-
-### Exposing Qdrant clusters to your client applications
-
-You can expose your Qdrant clusters to your client applications using Kubernetes services and ingresses. By default, a `ClusterIP` service is created for each Qdrant cluster.
-
-Within your Kubernetes cluster, you can access the Qdrant cluster using the service name and port:
-
-```
-http://qdrant-9a9f48c7-bb90-4fb2-816f-418a46a74b24.qdrant-namespace.svc:6333
-```
-
-This endpoint is also visible on the cluster detail page.
-
-If you want to access the database from your local developer machine, you can use `kubectl port-forward` to forward the service port to your local machine:
-
-```
-kubectl -n qdrant-namespace port-forward service/qdrant-9a9f48c7-bb90-4fb2-816f-418a46a74b24 6333:6333
-```
-
-You can also expose the database outside the Kubernetes cluster with a `LoadBalancer` (if supported in your Kubernetes environment) or `NodePort` service or an ingress.
-
-A simple Loadbalancer service could look like this:
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: qdrant-9a9f48c7-bb90-4fb2-816f-418a46a74b24-lb
-  namespace: qdrant-namespace
-spec:
-  type: LoadBalancer
-  ports:
-  - name: http
-    port: 6333
-  - name: grpc
-    port: 6334
-  selector:
-    app: qdrant
-    cluster-id: 9a9f48c7-bb90-4fb2-816f-418a46a74b24
-```
-
-An ingress could look like this:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: qdrant-9a9f48c7-bb90-4fb2-816f-418a46a74b24
-  namespace: qdrant-namespace
-spec:
-    rules:
-    - host: qdrant-9a9f48c7-bb90-4fb2-816f-418a46a74b24.your-domain.com
-      http:
-        paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: qdrant-9a9f48c7-bb90-4fb2-816f-418a46a74b24
-              port:
-                number: 6333
-```
-
-Please refer to the Kubernetes, ingress controller and cloud provider documention for more details.
-
-If you expose the database with such a way, you will be able to see this also reflected as an endpoint on the cluster detail page. And will see the Qdrant database dashboard link pointing to it.
+> **Note:** If you generate the installation command a second time, it will re-generate the included secrets, and you will have to apply the command again to update them.
 
 ## Deleting a Hybrid Cloud Environment
 

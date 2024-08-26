@@ -173,6 +173,29 @@ Notes about the format:
 
 [RFC 3339]: https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
 
+### UUID
+
+*Available as of v1.11.0*
+
+In addition to the basic `keyword` type, Qdrant supports `uuid` type for storing UUID values.
+Functionally, it works the same as `keyword`, internally stores parsed UUID values.
+
+```json
+{
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "uuids": [
+        "550e8400-e29b-41d4-a716-446655440000",
+        "550e8400-e29b-41d4-a716-446655440001"
+    ]
+}
+```
+
+String representation of UUID (e.g. `550e8400-e29b-41d4-a716-446655440000`) occupies 36 bytes.
+But when numeric representation is used, it is only 128 bits (16 bytes).
+
+Usage of `uuid` index type is recommended in payload-heavy collections to save RAM and improve search performance.
+
+
 ## Create point with payload
 REST API ([Schema](https://api.qdrant.tech/api-reference/points/upsert-points))
 
@@ -271,43 +294,33 @@ client.upsert("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::{client::QdrantClient, qdrant::PointStruct};
+use qdrant_client::qdrant::{PointStruct, UpsertPointsBuilder};
+use qdrant_client::{Payload, Qdrant, QdrantError};
 use serde_json::json;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 let points = vec![
     PointStruct::new(
         1,
         vec![0.05, 0.61, 0.76, 0.74],
-        json!(
-            {"city": "Berlin", "price": 1.99}
-        )
-        .try_into()
-        .unwrap(),
+        Payload::try_from(json!({"city": "Berlin", "price": 1.99})).unwrap(),
     ),
     PointStruct::new(
         2,
         vec![0.19, 0.81, 0.75, 0.11],
-        json!(
-            {"city": ["Berlin", "London"]}
-        )
-        .try_into()
-        .unwrap(),
+        Payload::try_from(json!({"city": ["Berlin", "London"]})).unwrap(),
     ),
     PointStruct::new(
         3,
         vec![0.36, 0.55, 0.47, 0.94],
-        json!(
-            {"city": ["Berlin", "Moscow"], "price": [1.99, 2.99]}
-        )
-        .try_into()
-        .unwrap(),
+        Payload::try_from(json!({"city": ["Berlin", "Moscow"], "price": [1.99, 2.99]}))
+            .unwrap(),
     ),
 ];
 
 client
-    .upsert_points("{collection_name}".to_string(), None, points, None)
+    .upsert_points(UpsertPointsBuilder::new("{collection_name}", points).wait(true))
     .await?;
 ```
 
@@ -437,26 +450,25 @@ client.setPayload("{collection_name}", {
 
 ```rust
 use qdrant_client::qdrant::{
-    points_selector::PointsSelectorOneOf, PointsIdsList, PointsSelector,
+    PointsIdsList, SetPayloadPointsBuilder,
 };
+use qdrant_client::Payload,;
 use serde_json::json;
 
 client
-    .set_payload_blocking(
-        "{collection_name}",
-        None,
-        &PointsSelector {
-            points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-                ids: vec![0.into(), 3.into(), 10.into()],
-            })),
-        },
-        json!({
-            "property1": "string",
-            "property2": "string",
+    .set_payload(
+        SetPayloadPointsBuilder::new(
+            "{collection_name}",
+            Payload::try_from(json!({
+                "property1": "string",
+                "property2": "string",
+            }))
+            .unwrap(),
+        )
+        .points_selector(PointsIdsList {
+            ids: vec![0.into(), 3.into(), 10.into()],
         })
-        .try_into()
-        .unwrap(),
-        None,
+        .wait(true),
     )
     .await?;
 ```
@@ -553,27 +565,25 @@ client.setPayload("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::qdrant::{
-    points_selector::PointsSelectorOneOf, Condition, Filter, PointsSelector,
-};
+use qdrant_client::qdrant::{Condition, Filter, SetPayloadPointsBuilder};
+use qdrant_client::Payload;
 use serde_json::json;
 
 client
-    .set_payload_blocking(
-        "{collection_name}",
-        None,
-        &PointsSelector {
-            points_selector_one_of: Some(PointsSelectorOneOf::Filter(Filter::must([
-                Condition::matches("color", "red".to_string()),
-            ]))),
-        },
-        json!({
-            "property1": "string",
-            "property2": "string",
-        })
-        .try_into()
-        .unwrap(),
-        None,
+    .set_payload(
+        SetPayloadPointsBuilder::new(
+            "{collection_name}",
+            Payload::try_from(json!({
+                "property1": "string",
+                "property2": "string",
+            }))
+            .unwrap(),
+        )
+        .points_selector(Filter::must([Condition::matches(
+            "color",
+            "red".to_string(),
+        )]))
+        .wait(true),
     )
     .await?;
 ```
@@ -693,27 +703,24 @@ client.overwritePayload("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::qdrant::{
-    points_selector::PointsSelectorOneOf, PointsIdsList, PointsSelector,
-};
+use qdrant_client::qdrant::{PointsIdsList, SetPayloadPointsBuilder};
+use qdrant_client::Payload;
 use serde_json::json;
 
 client
-    .overwrite_payload_blocking(
-        "{collection_name}",
-        None,
-        &PointsSelector {
-            points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-                ids: vec![0.into(), 3.into(), 10.into()],
-            })),
-        },
-        json!({
-            "property1": "string",
-            "property2": "string",
+    .overwrite_payload(
+        SetPayloadPointsBuilder::new(
+            "{collection_name}",
+            Payload::try_from(json!({
+                "property1": "string",
+                "property2": "string",
+            }))
+            .unwrap(),
+        )
+        .points_selector(PointsIdsList {
+            ids: vec![0.into(), 3.into(), 10.into()],
         })
-        .try_into()
-        .unwrap(),
-        None,
+        .wait(true),
     )
     .await?;
 ```
@@ -778,20 +785,15 @@ client.clearPayload("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::qdrant::{
-    points_selector::PointsSelectorOneOf, PointsIdsList, PointsSelector,
-};
+use qdrant_client::qdrant::{ClearPayloadPointsBuilder, PointsIdsList};
 
 client
     .clear_payload(
-        "{collection_name}",
-        None,
-        Some(PointsSelector {
-            points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-                ids: vec![0.into(), 3.into(), 100.into()],
-            })),
-        }),
-        None,
+        ClearPayloadPointsBuilder::new("{collection_name}")
+            .points(PointsIdsList {
+                ids: vec![0.into(), 3.into(), 10.into()],
+            })
+            .wait(true),
     )
     .await?;
 ```
@@ -848,21 +850,18 @@ client.deletePayload("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::qdrant::{
-    points_selector::PointsSelectorOneOf, PointsIdsList, PointsSelector,
-};
+use qdrant_client::qdrant::{DeletePayloadPointsBuilder, PointsIdsList};
 
 client
-    .delete_payload_blocking(
-        "{collection_name}",
-        None,
-        &PointsSelector {
-            points_selector_one_of: Some(PointsSelectorOneOf::Points(PointsIdsList {
-                ids: vec![0.into(), 3.into(), 100.into()],
-            })),
-        },
-        vec!["color".to_string(), "price".to_string()],
-        None,
+    .delete_payload(
+        DeletePayloadPointsBuilder::new(
+            "{collection_name}",
+            vec!["color".to_string(), "price".to_string()],
+        )
+        .points_selector(PointsIdsList {
+            ids: vec![0.into(), 3.into(), 10.into()],
+        })
+        .wait(true),
     )
     .await?;
 ```
@@ -947,21 +946,19 @@ client.deletePayload("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::qdrant::{
-    points_selector::PointsSelectorOneOf, Condition, Filter, PointsSelector,
-};
+use qdrant_client::qdrant::{Condition, DeletePayloadPointsBuilder, Filter};
 
 client
-    .delete_payload_blocking(
-        "{collection_name}",
-        None,
-        &PointsSelector {
-            points_selector_one_of: Some(PointsSelectorOneOf::Filter(Filter::must([
-                Condition::matches("color", "red".to_string()),
-            ]))),
-        },
-        vec!["color".to_string(), "price".to_string()],
-        None,
+    .delete_payload(
+        DeletePayloadPointsBuilder::new(
+            "{collection_name}",
+            vec!["color".to_string(), "price".to_string()],
+        )
+        .points_selector(Filter::must([Condition::matches(
+            "color",
+            "red".to_string(),
+        )]))
+        .wait(true),
     )
     .await?;
 ```
@@ -1034,15 +1031,16 @@ client.createPayloadIndex("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::qdrant::FieldType;
+use qdrant_client::qdrant::{CreateFieldIndexCollectionBuilder, FieldType};
 
 client
     .create_field_index(
-        "{collection_name}",
-        "name_of_the_field_to_index",
-        FieldType::Keyword,
-        None,
-        None,
+        CreateFieldIndexCollectionBuilder::new(
+            "{collection_name}",
+            "name_of_the_field_to_index",
+            FieldType::Keyword,
+        )
+        .wait(true),
     )
     .await?;
 ```

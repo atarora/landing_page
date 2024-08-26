@@ -1,12 +1,12 @@
-import { getCookie, devLog } from './helpers';
+import { getCookie, devLog, tagCloudUILinksWithAnonymousId } from './helpers';
 
+const WRITE_KEY = 'segmentWriteKey';
 const PAGES_SESSION_STORAGE_KEY = 'segmentPages';
 const INTERACTIONS_SESSION_STORAGE_KEY = 'segmentInteractions';
 const PAYLOAD_BOILERPLATE = {
   url: window.location.href,
   title: document.title,
 };
-
 
 /*******************/
 /* General helpers */
@@ -55,7 +55,7 @@ const handleClickInteraction = (event) => {
 
 // Gather all <a> elements that have been tagged 
 // for tracking via 'data-metric-loc' attribute
-export function tagAllAnchors() {
+function tagAllAnchors() {
   const allMetricsAnchors= document.querySelectorAll('a[data-metric-loc]');
 
   if (allMetricsAnchors) {
@@ -65,6 +65,13 @@ export function tagAllAnchors() {
   }
 }
 
+// Segment Key Getter & Setter
+const getSegmentWriteKey = () => {
+  return JSON.parse(sessionStorage.getItem(WRITE_KEY));
+}
+export const setSegmentWriteKey = (segmentWriteKey) => {
+  sessionStorage.setItem(WRITE_KEY, JSON.stringify(segmentWriteKey));
+}
 
 /****************/
 /* Segment CRUD */
@@ -173,10 +180,7 @@ export function handleConsent() {
 /* Loading Segment */
 /*******************/
 export function loadSegment() {
-  const metaTag = document.querySelector(`meta[name="segment"]`);
-  if (!metaTag) return; // Fail silently?
-
-  const writeKey = metaTag ? metaTag.getAttribute('content') : null;
+  const writeKey = getSegmentWriteKey();
   if (!writeKey) return; // Fail silently?
 
   devLog('Loading Segment...');
@@ -241,6 +245,11 @@ export function loadSegment() {
       analytics._writeKey = writeKey;
       analytics.SNIPPET_VERSION = "5.2.0";
       analytics.load(writeKey);
+
+      analytics.ready(function() {
+        tagCloudUILinksWithAnonymousId();
+        tagAllAnchors();
+      });
     }
   }
 

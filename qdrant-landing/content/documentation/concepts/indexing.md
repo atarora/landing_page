@@ -57,18 +57,18 @@ client.createPayloadIndex("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::{client::QdrantClient, qdrant::FieldType};
+use qdrant_client::qdrant::{CreateFieldIndexCollectionBuilder, FieldType};
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+use qdrant_client::Qdrant;
+
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 client
-    .create_field_index(
+    .create_field_index(CreateFieldIndexCollectionBuilder::new(
         "{collection_name}",
         "name_of_the_field_to_index",
         FieldType::Keyword,
-        None,
-        None,
-    )
+    ))
     .await?;
 ```
 
@@ -111,6 +111,8 @@ Available field types are:
 * `geo` - for [geo](../payload/#geo) payload, affects [Geo Bounding Box](../filtering/#geo-bounding-box) and [Geo Radius](../filtering/#geo-radius) filtering conditions.
 * `datetime` - for [datetime](../payload/#datetime) payload, affects [Range](../filtering/#range) filtering conditions (available as of v1.8.0).
 * `text` - a special kind of index, available for [keyword](../payload/#keyword) / string payloads, affects [Full Text search](../filtering/#full-text-match) filtering conditions.
+* `uuid` - a special type of index, similar to `keyword`, but optimized for [UUID values](../payload/#uuid).
+Affects [Match](../filtering/#match) filtering conditions. (available as of v1.11.0)
 
 Payload index may occupy some additional memory, so it is recommended to only use index for those fields that are used in filtering conditions.
 If you need to filter by many fields and the memory limits does not allow to index all of them, it is recommended to choose the field that limits the search result the most.
@@ -178,22 +180,22 @@ client.createPayloadIndex("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{
-        payload_index_params::IndexParams, FieldType, PayloadIndexParams, TextIndexParams,
-        TokenizerType,
-    },
+use qdrant_client::qdrant::{
+    payload_index_params::IndexParams, CreateFieldIndexCollectionBuilder, FieldType,
+    PayloadIndexParams, TextIndexParams, TokenizerType,
 };
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 client
     .create_field_index(
-        "{collection_name}",
-        "name_of_the_field_to_index",
-        FieldType::Text,
-        Some(&PayloadIndexParams {
+        CreateFieldIndexCollectionBuilder::new(
+            "{collection_name}",
+            "name_of_the_field_to_index",
+            FieldType::Text,
+        )
+        .field_index_params(PayloadIndexParams {
             index_params: Some(IndexParams::TextIndexParams(TextIndexParams {
                 tokenizer: TokenizerType::Word as i32,
                 min_token_len: Some(2),
@@ -201,7 +203,6 @@ client
                 lowercase: Some(true),
             })),
         }),
-        None,
     )
     .await?;
 ```
@@ -348,28 +349,27 @@ client.createPayloadIndex("{collection_name}", {
 ```
 
 ```rust
-use qdrant_client::{
-    client::QdrantClient,
-    qdrant::{
-        payload_index_params::IndexParams, FieldType, PayloadIndexParams,
-        IntegerIndexParams, TokenizerType,
-    },
+use qdrant_client::qdrant::{
+    payload_index_params::IndexParams, CreateFieldIndexCollectionBuilder, FieldType,
+    IntegerIndexParams, PayloadIndexParams,
 };
+use qdrant_client::Qdrant;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 client
     .create_field_index(
-        "{collection_name}",
-        "name_of_the_field_to_index",
-        FieldType::Integer,
-        Some(&PayloadIndexParams {
+        CreateFieldIndexCollectionBuilder::new(
+            "{collection_name}",
+            "name_of_the_field_to_index",
+            FieldType::Integer,
+        )
+        .field_index_params(PayloadIndexParams {
             index_params: Some(IndexParams::IntegerIndexParams(IntegerIndexParams {
                 lookup: false,
                 range: true,
             })),
         }),
-        None,
     )
     .await?;
 ```
@@ -419,6 +419,381 @@ await client.CreatePayloadIndexAsync(
     }
 );
 ```
+
+### On-disk payload index
+
+*Available as of v1.11.0*
+
+By default all payload-related structures are stored in memory. In this way, the vector index can quickly access payload values during search.
+As latency in this case is critical, it is recommended to keep hot payload indexes in memory.
+
+There are, however, cases when payload indexes are too large or rarely used. In those cases, it is possible to store payload indexes on disk.
+
+<aside role="alert">
+    On-disk payload index might affect cold requests latency, as it requires additional disk I/O operations.
+</aside>
+
+To configure on-disk payload index, you can use the following index parameters:
+
+```http
+PUT /collections/{collection_name}/index
+{
+    "field_name": "payload_field_name",
+    "field_schema": {
+        "type": "keyword",
+        "on_disk": true
+    }
+}
+```
+
+```python
+client.create_payload_index(
+    collection_name="{collection_name}",
+    field_name="payload_field_name",
+    field_schema=models.KeywordIndexParams(
+        type="keyword",
+        on_disk=True,
+    ),
+)
+```
+
+```typescript
+client.createPayloadIndex("{collection_name}", {
+  field_name: "payload_field_name",
+  field_schema: {
+    type: "keyword",
+    on_disk: true
+  },
+});
+```
+
+```rust
+use qdrant_client::qdrant::{
+    CreateFieldIndexCollectionBuilder,
+    KeywordIndexParamsBuilder,
+    FieldType
+};
+use qdrant_client::{Qdrant, QdrantError};
+
+let client = Qdrant::from_url("http://localhost:6334").build()?;
+
+client.create_field_index(
+    CreateFieldIndexCollectionBuilder::new(
+        "{collection_name}",
+        "payload_field_name",
+        FieldType::Keyword,
+    )
+    .field_index_params(
+        KeywordIndexParamsBuilder::default()
+            .on_disk(true),
+    ),
+);
+```
+
+```java
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.QdrantGrpcClient;
+import io.qdrant.client.grpc.Collections.PayloadIndexParams;
+import io.qdrant.client.grpc.Collections.PayloadSchemaType;
+import io.qdrant.client.grpc.Collections.KeywordIndexParams;
+
+QdrantClient client =
+    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
+
+client
+    .createPayloadIndexAsync(
+        "{collection_name}",
+        "payload_field_name",
+        PayloadSchemaType.Keyword,
+        PayloadIndexParams.newBuilder()
+            .setKeywordIndexParams(
+                KeywordIndexParams.newBuilder()
+                    .setOnDisk(true)
+                    .build())
+            .build(),
+        null,
+        null,
+        null)
+    .get();
+```
+
+```csharp
+using Qdrant.Client;
+using Qdrant.Client.Grpc;
+
+var client = new QdrantClient("localhost", 6334);
+
+await client.CreatePayloadIndexAsync(
+ collectionName: "{collection_name}",
+ fieldName: "payload_field_name",
+ schemaType: PayloadSchemaType.Keyword,
+ indexParams: new PayloadIndexParams
+ {
+  KeywordIndexParams = new KeywordIndexParams
+  {
+   OnDisk   = true
+  }
+ }
+);
+
+```
+
+Payload index on-disk is supported for following types:
+
+* `keyword`
+* `integer`
+* `float`
+* `datetime`
+* `uuid`
+
+The list will be extended in future versions.
+
+### Tenant Index
+
+*Available as of v1.11.0*
+
+Many vector search use-cases require multitenancy. In a multi-tenant scenario the collection is expected to contain multiple subsets of data, where each subset belongs to a different tenant. 
+
+Qdrant supports efficient multi-tenant search by enabling [special configuration](../guides/multiple-partitions/) vector index, which disables global search and only builds sub-indexes for each tenant.
+
+<aside role="note">
+    In Qdrant, tenants are not necessarily non-overlapping. It is possible to have subsets of data that belong to multiple tenants.
+</aside>
+
+However, knowing that the collection contains multiple tenants unlocks more opportunities for optimization.
+To optimize storage in Qdrant further, you can enable tenant indexing for payload fields.
+
+This option will tell Qdrant which fields are used for tenant identification and will allow Qdrant to structure storage for faster search of tenant-specific data.
+One example of such optimization is localizing tenant-specific data closer on disk, which will reduce the number of disk reads during search.
+
+To enable tenant index for a field, you can use the following index parameters:
+
+```http
+PUT /collections/{collection_name}/index
+{
+    "field_name": "payload_field_name",
+    "field_schema": {
+        "type": "keyword",
+        "is_tenant": true
+    }
+}
+```
+
+```python
+client.create_payload_index(
+    collection_name="{collection_name}",
+    field_name="payload_field_name",
+    field_schema=models.KeywordIndexParams(
+        type="keyword",
+        is_tenant=True,
+    ),
+)
+```
+
+```typescript
+client.createPayloadIndex("{collection_name}", {
+  field_name: "payload_field_name",
+  field_schema: {
+    type: "keyword",
+    is_tenant: true
+  },
+});
+```
+
+```rust
+use qdrant_client::qdrant::{
+    CreateFieldIndexCollectionBuilder,
+    KeywordIndexParamsBuilder,
+    FieldType
+};
+use qdrant_client::{Qdrant, QdrantError};
+
+let client = Qdrant::from_url("http://localhost:6334").build()?;
+
+client.create_field_index(
+    CreateFieldIndexCollectionBuilder::new(
+        "{collection_name}",
+        "payload_field_name",
+        FieldType::Keyword,
+    )
+    .field_index_params(
+        KeywordIndexParamsBuilder::default()
+            .is_tenant(true),
+    ),
+);
+```
+
+```java
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.QdrantGrpcClient;
+import io.qdrant.client.grpc.Collections.PayloadIndexParams;
+import io.qdrant.client.grpc.Collections.PayloadSchemaType;
+import io.qdrant.client.grpc.Collections.KeywordIndexParams;
+
+QdrantClient client =
+    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
+
+client
+    .createPayloadIndexAsync(
+        "{collection_name}",
+        "payload_field_name",
+        PayloadSchemaType.Keyword,
+        PayloadIndexParams.newBuilder()
+            .setKeywordIndexParams(
+                KeywordIndexParams.newBuilder()
+                    .setIsTenant(true)
+                    .build())
+            .build(),
+        null,
+        null,
+        null)
+    .get();
+```
+
+```csharp
+using Qdrant.Client;
+using Qdrant.Client.Grpc;
+
+var client = new QdrantClient("localhost", 6334);
+
+await client.CreatePayloadIndexAsync(
+ collectionName: "{collection_name}",
+ fieldName: "payload_field_name",
+ schemaType: PayloadSchemaType.Keyword,
+ indexParams: new PayloadIndexParams
+ {
+  KeywordIndexParams = new KeywordIndexParams
+  {
+   IsTenant = true
+  }
+ }
+);
+
+```
+
+
+Tenant optimization is supported for the following datatypes:
+
+* `keyword`
+* `uuid`
+
+### Principal Index
+
+*Available as of v1.11.0*
+
+Similar to the tenant index, the principal index is used to optimize storage for faster search, assuming that the search request is primarily filtered by the principal field.
+
+A good example of a use case for the principal index is time-related data, where each point is associated with a timestamp. In this case, the principal index can be used to optimize storage for faster search with time-based filters.
+
+```http
+PUT /collections/{collection_name}/index
+{
+    "field_name": "timestamp",
+    "field_schema": {
+        "type": "integer",
+        "is_principal": true
+    }
+}
+```
+
+```python
+client.create_payload_index(
+    collection_name="{collection_name}",
+    field_name="timestamp",
+    field_schema=models.KeywordIndexParams(
+        type="integer",
+        is_principal=True,
+    ),
+)
+```
+
+```typescript
+client.createPayloadIndex("{collection_name}", {
+  field_name: "timestamp",
+  field_schema: {
+    type: "integer",
+    is_principal: true
+  },
+});
+```
+
+```rust
+use qdrant_client::qdrant::{
+    CreateFieldIndexCollectionBuilder,
+    IntegerdIndexParamsBuilder,
+    FieldType
+};
+use qdrant_client::{Qdrant, QdrantError};
+
+let client = Qdrant::from_url("http://localhost:6334").build()?;
+
+client.create_field_index(
+    CreateFieldIndexCollectionBuilder::new(
+        "{collection_name}",
+        "timestamp",
+        FieldType::Integer,
+    )
+    .field_index_params(
+        IntegerdIndexParamsBuilder::default()
+            .is_principal(true),
+    ),
+);
+```
+
+```java
+import io.qdrant.client.QdrantClient;
+import io.qdrant.client.QdrantGrpcClient;
+import io.qdrant.client.grpc.Collections.PayloadIndexParams;
+import io.qdrant.client.grpc.Collections.PayloadSchemaType;
+import io.qdrant.client.grpc.Collections.IntegerIndexParams;
+
+QdrantClient client =
+    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
+
+client
+    .createPayloadIndexAsync(
+        "{collection_name}",
+        "timestamp",
+        PayloadSchemaType.Integer,
+        PayloadIndexParams.newBuilder()
+            .setIntegerIndexParams(
+                KeywordIndexParams.newBuilder()
+                    .setIsPrincipa(true)
+                    .build())
+            .build(),
+        null,
+        null,
+        null)
+    .get();
+```
+
+```csharp
+using Qdrant.Client;
+using Qdrant.Client.Grpc;
+
+var client = new QdrantClient("localhost", 6334);
+
+await client.CreatePayloadIndexAsync(
+ collectionName: "{collection_name}",
+ fieldName: "timestamp",
+ schemaType: PayloadSchemaType.Integer,
+ indexParams: new PayloadIndexParams
+ {
+  IntegerIndexParams = new IntegerIndexParams
+  {
+   IsPrincipal = true
+  }
+ }
+);
+
+```
+
+Principal optimization is supported for following types:
+
+* `integer`
+* `float`
+* `datetime`
+
 
 ## Vector Index
 
@@ -525,31 +900,29 @@ client.createCollection("{collection_name}", {
 ```
 
 ```rust
+use qdrant_client::qdrant::{
+    CreateCollectionBuilder, SparseIndexConfigBuilder, SparseVectorParamsBuilder,
+    SparseVectorsConfigBuilder,
+};
+use qdrant_client::Qdrant;
 
-use qdrant_client::{client::QdrantClient, qdrant::collections::SparseVectorIndexConfig};
+let client = Qdrant::from_url("http://localhost:6334").build()?;
 
-let client = QdrantClient::from_url("http://localhost:6334").build()?;
+let mut sparse_vectors_config = SparseVectorsConfigBuilder::default();
 
-client.create_collection(&CreateCollection {
-    collection_name: "{collection_name}".to_string(),
-    sparse_vectors_config: Some(SparseVectorConfig { 
-        map: [
-            (
-                "splade-model-name".to_string(), 
-                SparseVectorParams {
-                    index: Some(SparseIndexConfig {
-                        on_disk: false,
-                        ..Default::default()
-                    }),
-                    ..Default::default()
-                }
-            )
-        ].into_iter().collect()
-    }),
-    ..Default::default()
-}).await;
+sparse_vectors_config.add_named_vector_params(
+    "splade-model-name",
+    SparseVectorParamsBuilder::default()
+        .index(SparseIndexConfigBuilder::default().on_disk(true)),
+);
+
+client
+    .create_collection(
+        CreateCollectionBuilder::new("{collection_name}")
+            .sparse_vectors_config(sparse_vectors_config),
+    )
+    .await?;
 ```
-
 
 ```java
 import io.qdrant.client.QdrantClient;
@@ -658,30 +1031,24 @@ client.createCollection("{collection_name}", {
 });
 ```
 
-
 ```rust
-use qdrant_client::qdrant::{ 
-    CreateCollectionBuilder, SparseVectorParamsBuilder,
-    Modifier, sparse_vectors_config::SparseVectorsConfigBuilder
+use qdrant_client::qdrant::{
+    CreateCollectionBuilder, Modifier, SparseVectorParamsBuilder, SparseVectorsConfigBuilder,
 };
-use qdrant_client::qdrant::;
-use qdrant_client::Qdrant;
-
+use qdrant_client::{Qdrant, QdrantError};
 
 let client = Qdrant::from_url("http://localhost:6334").build()?;
 
 let mut sparse_vectors_config = SparseVectorsConfigBuilder::default();
-
 sparse_vectors_config.add_named_vector_params(
     "text",
-    SparseVectorParamsBuilder::default()
-        .modifier(Modifier::Idf),
+    SparseVectorParamsBuilder::default().modifier(Modifier::Idf),
 );
 
 client
     .create_collection(
         CreateCollectionBuilder::new("{collection_name}")
-            .sparse_vectors_config(sparse_vectors_config)
+            .sparse_vectors_config(sparse_vectors_config),
     )
     .await?;
 ```
