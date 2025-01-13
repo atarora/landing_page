@@ -20,7 +20,7 @@ A free tier cluster only includes 1 single node with the following resources:
 | Disk space | 4 GB  |
 | Nodes      | 1     |
 
-This configuration supports serving about 1 M vectors of 768 dimensions. To calculate your needs, refer to our documentation on [Capacity and sizing](/documentation/cloud/capacity-sizing/).
+This configuration supports serving about 1 M vectors of 768 dimensions. To calculate your needs, refer to our documentation on [Capacity Planning](/documentation/guides/capacity-planning/).
 
 The choice of cloud providers and regions is limited.
 
@@ -73,7 +73,7 @@ This page shows you how to use the Qdrant Cloud Console to create a custom Qdran
 
 1. Choose your data center region or Hybrid Cloud environment. 
 1. Configure RAM for each node. 
-   >  For more information, see our [**Capacity and Sizing**](/documentation/cloud/capacity-sizing/) guidance.
+   >  For more information, see our [Capacity Planning](/documentation/guides/capacity-planning/) guidance.
 1. Choose the number of vCPUs per node. If you add more
    RAM, the menu provides different options for vCPUs.
 1. Select the number of nodes you want the cluster to be deployed on.
@@ -88,6 +88,10 @@ Once provisioned, you can access your cluster on ports 443 and 6333 (REST) and 6
 ![Cluster configured in the UI](/docs/cloud/create-cluster-test.png)
 
 You should now see the new cluster in the **Clusters** menu.
+
+## Deleting a cluster
+
+You can delete a Qdrant database cluster from the cluster's detail page.
 
 ## Next steps
 

@@ -6,13 +6,13 @@ aliases:
   - ../installation
 ---
 
-## Installation requirements
+# Installation requirements
 
 The following sections describe the requirements for deploying Qdrant.
 
-### CPU and memory
+## CPU and memory
 
-The CPU and RAM that you need depends on:
+The preferred size of your CPU and RAM depends on:
 
 - Number of vectors
 - Vector dimensions
@@ -22,6 +22,15 @@ The CPU and RAM that you need depends on:
 - How you configure quantization
 
 Our [Cloud Pricing Calculator](https://cloud.qdrant.io/calculator) can help you estimate required resources without payload or index data.
+
+### Supported CPU architectures:
+
+**64-bit system:**
+- x86_64/amd64 
+- AArch64/arm64
+
+**32-bit system:**
+- Not supported
 
 ### Storage
 
@@ -55,7 +64,7 @@ For production, you can use our Qdrant Cloud to run Qdrant either fully managed 
 
 For testing or development setups, you can run the Qdrant container or as a binary executable.
 
-If you want to run Qdrant in your own infrastructure, without any cloud connection, we recommend to install Qdrant in a Kubernetes cluster with our Helm chart, or to use our Qdrant Enterprise Operator
+If you want to run Qdrant in your own infrastructure, without any cloud connection, we recommend to install Qdrant in a Kubernetes cluster with our Helm chart, or to use our Qdrant Enterprise Operator.
 
 ## Production
 
@@ -197,4 +206,4 @@ After a successful build, you can find the binary in the following subdirectory 
 
 ## Client libraries
 
-In addition to the service, Qdrant provides a variety of client libraries for different programming languages. For a full list, see our [Client libraries](../../interfaces/#client-libraries) documentation.
+In addition to the service, Qdrant provides a variety of client libraries for different programming languages. For a full list, see our [Client libraries](/documentation/interfaces/#client-libraries) documentation.

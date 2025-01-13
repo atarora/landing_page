@@ -1,7 +1,8 @@
 ---
 title: Concepts
-weight: 11
+weight: 8
 # If the index.md file is empty, the link to the section will be hidden from the sidebar
+partition: qdrant
 ---
 
 # Concepts

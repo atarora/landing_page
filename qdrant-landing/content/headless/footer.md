@@ -81,7 +81,7 @@ menuItems:
         url: https://qdrant.to/roadmap
       - id: 5
         name: Changelog
-        url: https://github.com/qdrant/qdrant/releases     
+        url: https://github.com/qdrant/qdrant/releases
       - id: 6
         name: Status Page
         url: https://status.qdrant.io/
@@ -96,6 +96,9 @@ menuItems:
       - id: 2
         name: Articles
         url: /articles/
+      - id: 3
+        name: Startup Program
+        url: /qdrant-for-startups/
   - title: Company
     items:
       - id: 0
@@ -127,5 +130,12 @@ bages:
   - src: /img/soc2-badge.png
     alt: "SOC2"
     url: http://qdrant.to/trust-center
+  - src: /img/gdpr-badge.png
+    alt: "heyData GDPR"
+    url: https://heydata.eu/
+question: Ready to get started with Qdrant?
+questionButton:
+  text: Start Free
+  url: https://qdrant.to/cloud/
 sitemapExclude: true
 ---

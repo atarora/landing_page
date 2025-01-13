@@ -32,7 +32,7 @@ In summary, single-node clusters are best for non-production workloads, replicat
 
 ## Enabling distributed mode in self-hosted Qdrant
 
-To enable distributed deployment - enable the cluster mode in the [configuration](../configuration/) or using the ENV variable: `QDRANT__CLUSTER__ENABLED=true`.
+To enable distributed deployment - enable the cluster mode in the [configuration](/documentation/guides/configuration/) or using the ENV variable: `QDRANT__CLUSTER__ENABLED=true`.
 
 ```yaml
 cluster:
@@ -152,7 +152,7 @@ Qdrant uses the [Raft](https://raft.github.io/) consensus protocol to maintain c
 
 Operations on points, on the other hand, do not go through the consensus infrastructure.
 Qdrant is not intended to have strong transaction guarantees, which allows it to perform point operations with low overhead.
-In practice, it means that Qdrant does not guarantee atomic distributed updates but allows you to wait until the [operation is complete](../../concepts/points/#awaiting-result) to see the results of your writes.
+In practice, it means that Qdrant does not guarantee atomic distributed updates but allows you to wait until the [operation is complete](/documentation/concepts/points/#awaiting-result) to see the results of your writes.
 
 Operations on collections, on the contrary, are part of the consensus which guarantees that all operations are durable and eventually executed by all nodes.
 In practice it means that a majority of nodes agree on what operations should be applied before the service will perform them.
@@ -171,7 +171,7 @@ There are two methods of distributing points across shards:
 
 - **User-defined sharding**: _Available as of v1.7.0_ - Each point is uploaded to a specific shard, so that operations can hit only the shard or shards they need. Even with this distribution, shards still ensure having non-intersecting subsets of points. [See more...](#user-defined-sharding)
 
-Each node knows where all parts of the collection are stored through the [consensus protocol](./#raft), so when you send a search request to one Qdrant node, it automatically queries all other nodes to obtain the full search result.
+Each node knows where all parts of the collection are stored through the [consensus protocol](#raft), so when you send a search request to one Qdrant node, it automatically queries all other nodes to obtain the full search result.
 
 ### Choosing the right number of shards
 
@@ -535,8 +535,7 @@ client.upsert(
 ```
 
 ```typescript
-
-client.upsertPoints("{collection_name}", {
+client.upsert("{collection_name}", {
     points: [
         {
             id: 1111,
@@ -667,7 +666,7 @@ fastest depends on the size and state of a shard.
 Available shard transfer methods are:
 
 - `stream_records`: _(default)_ transfer by streaming just its records to the target node in batches.
-- `snapshot`: transfer including its index and quantized data by utilizing a [snapshot](../../concepts/snapshots/) automatically.
+- `snapshot`: transfer including its index and quantized data by utilizing a [snapshot](/documentation/concepts/snapshots/) automatically.
 - `wal_delta`: _(auto recovery default)_ transfer by resolving [WAL] difference; the operations that were missed.
 
 Each has pros, cons and specific requirements, some of which are:
@@ -720,7 +719,7 @@ are acceptable in your use case. If your cluster is unstable and out of
 resources, it's probably best to use the `stream_records` transfer method,
 because it is unlikely to fail.
 
-The `snapshot` transfer method utilizes [snapshots](../../concepts/snapshots/)
+The `snapshot` transfer method utilizes [snapshots](/documentation/concepts/snapshots/)
 to transfer a shard. A snapshot is created automatically. It is then transferred
 and restored on the target node. After this is done, the snapshot is removed
 from both nodes. While the snapshot/transfer/restore operation is happening, the
@@ -749,11 +748,9 @@ The `stream_records` method is currently used as default. This may change in the
 future. As of Qdrant 1.9.0 `wal_delta` is used for automatic shard replications
 to recover dead shards.
 
-[WAL]: ../../concepts/storage/#versioning
+[WAL]: /documentation/concepts/storage/#versioning
 
 ## Replication
-
-*Available as of v0.11.0*
 
 Qdrant allows you to replicate shards between nodes in the cluster.
 
@@ -762,9 +759,9 @@ This ensures the availability of the data in case of node failures, except if al
 
 ### Replication factor
 
-When you create a collection, you can control how many shard replicas you'd like to store by changing the `replication_factor`. By default, `replication_factor` is set to "1", meaning no additional copy is maintained automatically. You can change that by setting the `replication_factor` when you create a collection.
+When you create a collection, you can control how many shard replicas you'd like to store by changing the `replication_factor`. By default, `replication_factor` is set to "1", meaning no additional copy is maintained automatically. The default can be changed in the [Qdrant configuration](/documentation/guides/configuration/#configuration-options). You can change that by setting the `replication_factor` when you create a collection.
 
-Currently, the replication factor of a collection can only be configured at creation time.
+The `replication_factor` can be updated for an existing collection, but the effect of this depends on how you're running Qdrant. If you're hosting the open source version of Qdrant yourself, changing the replication factor after collection creation doesn't do anything. You can manually [create](#creating-new-shard-replicas) or drop shard replicas to achieve your desired replication factor. In Qdrant Cloud (including Hybrid Cloud, Private Cloud) your shards will automatically be replicated or dropped to match your configured replication factor.
 
 ```http
 PUT /collections/{collection_name}
@@ -894,7 +891,7 @@ Since a replication factor of "2" would require twice as much storage space, it 
 
 ### Creating new shard replicas
 
-It is possible to create or delete replicas manually on an existing collection using the [Update collection cluster setup API](https://api.qdrant.tech/master/api-reference/distributed/update-collection-cluster).
+It is possible to create or delete replicas manually on an existing collection using the [Update collection cluster setup API](https://api.qdrant.tech/master/api-reference/distributed/update-collection-cluster). This is usually only necessary if you run Qdrant open-source. In Qdrant Cloud shard replication is handled and updated automatically, matching the configured `replication_factor`.
 
 A replica can be added on a specific peer by specifying the peer from which to replicate.
 
@@ -985,7 +982,7 @@ Snapshot recovery, used in single-node deployment, is different from cluster one
 Consensus manages all metadata about all collections and does not require snapshots to recover it.
 But you can use snapshots to recover missing shards of the collections.
 
-Use the [Collection Snapshot Recovery API](../../concepts/snapshots/#recover-in-cluster-deployment) to do it.
+Use the [Collection Snapshot Recovery API](/documentation/concepts/snapshots/#recover-in-cluster-deployment) to do it.
 The service will download the specified snapshot of the collection and recover shards with data from it.
 
 Once all shards of the collection are recovered, the collection will become operational again.
@@ -1159,6 +1156,17 @@ client.CreateCollection(context.Background(), &qdrant.CreateCollection{
 ```
 
 Write operations will fail if the number of active replicas is less than the `write_consistency_factor`.
+
+The configuration of the `write_consistency_factor` is important for adjusting the cluster's behavior when some nodes go offline due to restarts, upgrades, or failures.
+
+By default, the cluster continues to accept updates as long as at least one replica of each shard is online. However, this behavior means that once an offline replica is restored, it will require additional synchronization with the rest of the cluster. In some cases, this synchronization can be resource-intensive and undesirable.
+
+Setting the `write_consistency_factor` to match the replication factor modifies the cluster's behavior so that unreplicated updates are rejected, preventing the need for extra synchronization.
+
+If the update is applied to enough replicas - according to the `write_consistency_factor` - the update will return a successful status. Any replicas that failed to apply the update will be temporarily disabled and are automatically recovered to keep data consistency. If the update could not be applied to enough replicas, it'll return an error and may be partially applied. The user must submit the operation again to ensure data consistency.
+
+For asynchronous updates and injection pipelines capable of handling errors and retries, this strategy might be preferable.
+
 
 ### Read consistency
 
@@ -1533,7 +1541,7 @@ In some cases it might be useful to have a Qdrant node that only accumulates dat
 There are several scenarios where this can be useful:
 
 - Listener option can be used to store data in a separate node, which can be used for backup purposes or to store data for a long time.
-- Listener node can be used to syncronize data into another region, while still performing search operations in the local region.
+- Listener node can be used to synchronize data into another region, while still performing search operations in the local region.
 
 
 To enable listener mode, set `node_type` to `Listener` in the config file:

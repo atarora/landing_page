@@ -15,6 +15,7 @@ keywords:
   - SPLADE
   - hybrid search
   - vector search
+category: vector-search-manuals
 ---
 
 Think of a library with a vast index card system. Each index card only has a few keywords marked out (sparse vector) of a large possible set for each book (document). This is what sparse vectors enable for text. 
@@ -347,7 +348,7 @@ query_vec, query_tokens = compute_vector(query_text)
 query_vec.shape
 
 query_indices = query_vec.nonzero().numpy().flatten()
-query_values = query_vec.detach().numpy()[indices]
+query_values = query_vec.detach().numpy()[query_indices]
 ```
 
 In this example, we use the same model for both document and query. This is not a requirement, but it's a simpler approach.

@@ -1,6 +1,7 @@
 ---
 title: Practice Datasets
-weight: 23
+weight: 29
+partition: build
 ---
 
 # Common Datasets in Snapshot Format
