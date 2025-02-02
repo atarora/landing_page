@@ -67,8 +67,8 @@ cards:
       src: /img/stars/nicola-procopio.jpg
       alt: Nicola Procopio Photo
     name: Nicola Procopio
-    position: Senior Data Scientist @ Fincons Group
-    description: Nicola, a data scientist and open-source enthusiast since 2009, has used Qdrant since 2023. He developed fastembed for Haystack, vector search for Cheshire Cat A.I., and shares his expertise through articles, tutorials, and talks.
+    position: Senior Data Scientist | Machine Learning & A.I. Expert @ ACSoftware
+    description: I am a data scientist and open-source enthusiast since 2009, I used Qdrant since 2023. I contribute to FastEmbed integration for Haystack, Haystack core and vector search for Cheshire Cat A.I., and I like to share my expertise through articles, tutorials, and talks.
   - id: 8
     image:
       src: /img/stars/eduardo-vasquez.jpg
@@ -118,6 +118,20 @@ cards:
     name: Şahin Utar
     position: Software Builder, Entrepreneur
     description: Şahin, a dedicated RAG evangelist since 2022, leverages vector databases in his startups as an early GenAI adopter. A former CTO, now an entrepreneur, he focuses on Dart and Python, using GenAI, RAG, and domain ontologies to simplify complex consumer challenges.
+  - id: 15
+    image:
+      src: /img/stars/astra-clelia-bertelli.jpg
+      alt: Astra Clelia Bertelli Photo
+    name: Astra Clelia Bertelli
+    position: Foundation Engineer, Bioinformatics researcher
+    description: Foundation Engineer @ Criad LTD, Bioinformatics researcher @ Natural History Museum Vienna
+  - id: 16
+    image:
+      src: /img/stars/turja-narayan-chaudhuri.jpg
+      alt: Turja Narayan Chaudhuri Photo
+    name: Turja Narayan Chaudhuri
+    position: Global Platform Presales Leader
+    description: Global Platform Presales Leader, EY. 13+ years of experience in the IT Industry across Samsung, PwC, EY, and Accenture.
 sitemapExclude: true
 ---
 

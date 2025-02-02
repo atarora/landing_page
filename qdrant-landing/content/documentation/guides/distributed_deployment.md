@@ -296,11 +296,21 @@ To ensure all nodes in your cluster are evenly utilized, the number of shards mu
 
 > Aside: Advanced use cases such as multitenancy may require an uneven distribution of shards. See [Multitenancy](/articles/multitenancy/).
 
-We recommend creating at least 2 shards per node to allow future expansion without having to re-shard. Re-sharding should be avoided since it requires creating a new collection. In-place re-sharding is planned for a future version of Qdrant.
+We recommend creating at least 2 shards per node to allow future expansion without having to re-shard. [Resharding](#resharding) is possible when using our cloud offering, but should be avoided if hosting elsewhere as it would require creating a new collection.
 
 If you anticipate a lot of growth, we recommend 12 shards since you can expand from 1 node up to 2, 3, 6, and 12 nodes without having to re-shard. Having more than 12 shards in a small cluster may not be worth the performance overhead.
 
 Shards are evenly distributed across all existing nodes when a collection is first created, but Qdrant does not automatically rebalance shards if your cluster size or replication factor changes (since this is an expensive operation on large clusters). See the next section for how to move shards after scaling operations.
+
+### Resharding
+
+*Available as of v1.13.0 in Cloud*
+
+Resharding allows you to change the number of shards in your existing collections if you're hosting with our [Cloud](/documentation/cloud-intro/) offering.
+
+Resharding can change the number of shards both up and down, without having to recreate the collection from scratch.
+
+Please refer to the [Resharding](/documentation/cloud/cluster-scaling/#resharding) section in our cloud documentation for more details.
 
 ### Moving shards
 
@@ -1023,8 +1033,11 @@ Qdrant provides a few options to control consistency guarantees:
 
 ### Write consistency factor
 
-The `write_consistency_factor` represents the number of replicas that must acknowledge a write operation before responding to the client. It is set to one by default.
-It can be configured at the collection's creation time.
+The `write_consistency_factor` represents the number of replicas that must acknowledge a write operation before responding to the client. It is set to 1 by default.
+It can be configured at the collection's creation or when updating the
+collection parameters.
+
+This value can range from 1 to the number of replicas you have for each shard.
 
 ```http
 PUT /collections/{collection_name}
@@ -1155,7 +1168,14 @@ client.CreateCollection(context.Background(), &qdrant.CreateCollection{
 })
 ```
 
-Write operations will fail if the number of active replicas is less than the `write_consistency_factor`.
+Write operations will fail if the number of active replicas is less than the
+`write_consistency_factor`. In this case, the client is expected to send the
+operation again to ensure a consistent state is reached.
+
+Setting the `write_consistency_factor` to a lower value may allow accepting
+writes even if there are unresponsive nodes. Unresponsive nodes are marked as
+dead and will automatically be recovered once available to ensure data
+consistency.
 
 The configuration of the `write_consistency_factor` is important for adjusting the cluster's behavior when some nodes go offline due to restarts, upgrades, or failures.
 
