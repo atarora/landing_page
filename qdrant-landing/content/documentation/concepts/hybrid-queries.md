@@ -1,7 +1,7 @@
 ---
 title: Hybrid Queries #required
 weight: 57 # This is the order of the page in the sidebar. The lower the number, the higher the page will be in the sidebar.
-aliases: 
+aliases:
   - ../hybrid-queries
 hideInSidebar: false # Optional. If true, the page will not be shown in the sidebar. It can be used in regular documentation pages and in documentation section pages (_index.md).
 ---
@@ -10,7 +10,7 @@ hideInSidebar: false # Optional. If true, the page will not be shown in the side
 
 *Available as of v1.10.0*
 
-With the introduction of [many named vectors per point](/documentation/concepts/vectors/#named-vectors), there are use-cases when the best search is obtained by combining multiple queries, 
+With the introduction of [many named vectors per point](/documentation/concepts/vectors/#named-vectors), there are use-cases when the best search is obtained by combining multiple queries,
 or by performing the search in more than one stage.
 
 Qdrant has a flexible and universal interface to make this possible, called `Query API` ([API reference](https://api.qdrant.tech/api-reference/search/query-points)).
@@ -23,6 +23,8 @@ Specifically, whenever a query has at least one prefetch, Qdrant will:
 
 Additionally, prefetches can have prefetches themselves, so you can have nested prefetches.
 
+<aside role="status">Using <code>offset</code> parameter only affects the main query. This means that the prefetches must have a <code>limit</code> of at least <code>limit + offset</code> of the main query, otherwise you can get an empty result.</aside>
+
 ## Hybrid Search
 
 One of the most common problems when you have different representations of the same data is to combine the queried points for each representation into a single result.
@@ -34,207 +36,25 @@ plus the best of matching specific words.
 
 Qdrant currently has two ways of combining the results from different queries:
 
-- `rrf` - 
+- `rrf` -
 <a href=https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf target="_blank">
 Reciprocal Rank Fusion
 </a>
 
   Considers the positions of results within each query, and boosts the ones that appear closer to the top in multiple of them.
-  
-- `dbsf` - 
+
+- `dbsf` -
 <a href=https://medium.com/plain-simple-software/distribution-based-score-fusion-dbsf-a-new-approach-to-vector-search-ranking-f87c37488b18 target="_blank">
 Distribution-Based Score Fusion
 </a> *(available as of v1.11.0)*
 
   Normalizes the scores of the points in each query, using the mean +/- the 3rd standard deviation as limits, and then sums the scores of the same point across different queries.
-  
+
   <aside role="status"><code>dbsf</code> is stateless and calculates the normalization limits only based on the results of each query, not on all the scores that it has seen.</aside>
 
-Here is an example of Reciprocal Rank Fusion for a query containing two prefetches against different named vectors configured to respectively hold sparse and dense vectors. 
+Here is an example of Reciprocal Rank Fusion for a query containing two prefetches against different named vectors configured to respectively hold sparse and dense vectors.
 
-```http
-POST /collections/{collection_name}/points/query
-{
-    "prefetch": [
-        {
-            "query": { 
-                "indices": [1, 42],    // <┐
-                "values": [0.22, 0.8]  // <┴─sparse vector
-             },
-            "using": "sparse",
-            "limit": 20
-        },
-        {
-            "query": [0.01, 0.45, 0.67, ...], // <-- dense vector
-            "using": "dense",
-            "limit": 20
-        }
-    ],
-    "query": { "fusion": "rrf" }, // <--- reciprocal rank fusion
-    "limit": 10
-}
-```
-
-```python
-from qdrant_client import QdrantClient, models
-
-client = QdrantClient(url="http://localhost:6333")
-
-client.query_points(
-    collection_name="{collection_name}",
-    prefetch=[
-        models.Prefetch(
-            query=models.SparseVector(indices=[1, 42], values=[0.22, 0.8]),
-            using="sparse",
-            limit=20,
-        ),
-        models.Prefetch(
-            query=[0.01, 0.45, 0.67],  # <-- dense vector
-            using="dense",
-            limit=20,
-        ),
-    ],
-    query=models.FusionQuery(fusion=models.Fusion.RRF),
-)
-```
-
-```typescript
-import { QdrantClient } from "@qdrant/js-client-rest";
-
-const client = new QdrantClient({ host: "localhost", port: 6333 });
-
-client.query("{collection_name}", {
-    prefetch: [
-        {
-            query: {
-                values: [0.22, 0.8],
-                indices: [1, 42],
-            },
-            using: 'sparse',
-            limit: 20,
-        },
-        {
-            query: [0.01, 0.45, 0.67],
-            using: 'dense',
-            limit: 20,
-        },
-    ],
-    query: {
-        fusion: 'rrf',
-    },
-});
-```
-
-```rust
-use qdrant_client::Qdrant;
-use qdrant_client::qdrant::{Fusion, PrefetchQueryBuilder, Query, QueryPointsBuilder};
-
-let client = Qdrant::from_url("http://localhost:6334").build()?;
-
-client.query(
-    QueryPointsBuilder::new("{collection_name}")
-        .add_prefetch(PrefetchQueryBuilder::default()
-            .query(Query::new_nearest([(1, 0.22), (42, 0.8)].as_slice()))
-            .using("sparse")
-            .limit(20u64)
-        )
-        .add_prefetch(PrefetchQueryBuilder::default()
-            .query(Query::new_nearest(vec![0.01, 0.45, 0.67]))
-            .using("dense")
-            .limit(20u64)
-        )
-        .query(Query::new_fusion(Fusion::Rrf))
-).await?;
-```
-
-```java
-import static io.qdrant.client.QueryFactory.nearest;
-
-import java.util.List;
-
-import static io.qdrant.client.QueryFactory.fusion;
-
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.Fusion;
-import io.qdrant.client.grpc.Points.PrefetchQuery;
-import io.qdrant.client.grpc.Points.QueryPoints;
-
-QdrantClient client = new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
-
-client.queryAsync(
-    QueryPoints.newBuilder()
-    .setCollectionName("{collection_name}")
-    .addPrefetch(PrefetchQuery.newBuilder()
-      .setQuery(nearest(List.of(0.22f, 0.8f), List.of(1, 42)))
-      .setUsing("sparse")
-      .setLimit(20)
-      .build())
-    .addPrefetch(PrefetchQuery.newBuilder()
-      .setQuery(nearest(List.of(0.01f, 0.45f, 0.67f)))
-      .setUsing("dense")
-      .setLimit(20)
-      .build())
-    .setQuery(fusion(Fusion.RRF))
-    .build())
-  .get();
-```
-
-```csharp
-using Qdrant.Client;
-using Qdrant.Client.Grpc;
-
-var client = new QdrantClient("localhost", 6334);
-
-await client.QueryAsync(
-  collectionName: "{collection_name}",
-  prefetch: new List < PrefetchQuery > {
-    new() {
-      Query = new(float, uint)[] {
-          (0.22f, 1), (0.8f, 42),
-        },
-        Using = "sparse",
-        Limit = 20
-    },
-    new() {
-      Query = new float[] {
-          0.01f, 0.45f, 0.67f
-        },
-        Using = "dense",
-        Limit = 20
-    }
-  },
-  query: Fusion.Rrf
-);
-```
-
-```go
-import (
-	"context"
-
-	"github.com/qdrant/go-client/qdrant"
-)
-
-client, err := qdrant.NewClient(&qdrant.Config{
-	Host: "localhost",
-	Port: 6334,
-})
-
-client.Query(context.Background(), &qdrant.QueryPoints{
-	CollectionName: "{collection_name}",
-	Prefetch: []*qdrant.PrefetchQuery{
-		{
-			Query: qdrant.NewQuerySparse([]uint32{1, 42}, []float32{0.22, 0.8}),
-			Using: qdrant.PtrOf("sparse"),
-		},
-		{
-			Query: qdrant.NewQueryDense([]float32{0.01, 0.45, 0.67}),
-			Using: qdrant.PtrOf("dense"),
-		},
-	},
-	Query: qdrant.NewQueryFusion(qdrant.Fusion_RRF),
-})
-```
+{{< code-snippet path="/documentation/headless/snippets/query-points/hybrid-basic/" >}}
 
 ## Multi-stage queries
 
@@ -258,1026 +78,123 @@ such that the coarse results are fetched first, and then they are refined later 
 
 Fetch 1000 results using a shorter MRL byte vector, then re-score them using the full vector and get the top 10.
 
-```http
-POST /collections/{collection_name}/points/query
-{
-    "prefetch": {
-        "query": [1, 23, 45, 67], // <------------- small byte vector
-        "using": "mrl_byte"
-        "limit": 1000
-    },
-    "query": [0.01, 0.299, 0.45, 0.67, ...], // <-- full vector
-    "using": "full",
-    "limit": 10
-}
-```
-
-```python
-from qdrant_client import QdrantClient, models
-
-client = QdrantClient(url="http://localhost:6333")
-
-client.query_points(
-    collection_name="{collection_name}",
-    prefetch=models.Prefetch(
-        query=[1, 23, 45, 67],  # <------------- small byte vector
-        using="mrl_byte",
-        limit=1000,
-    ),
-    query=[0.01, 0.299, 0.45, 0.67],  # <-- full vector
-    using="full",
-    limit=10,
-)
-```
-
-```typescript
-import { QdrantClient } from "@qdrant/js-client-rest";
-
-const client = new QdrantClient({ host: "localhost", port: 6333 });
-
-client.query("{collection_name}", {
-  prefetch: {
-    query: [1, 23, 45, 67], // <------------- small byte vector
-    using: 'mrl_byte',
-    limit: 1000,
-  },
-  query: [0.01, 0.299, 0.45, 0.67], // <-- full vector,
-  using: 'full',
-  limit: 10,
-});
-```
-
-```rust
-use qdrant_client::Qdrant;
-use qdrant_client::qdrant::{PrefetchQueryBuilder, Query, QueryPointsBuilder};
-
-let client = Qdrant::from_url("http://localhost:6334").build()?;
-
-client.query(
-    QueryPointsBuilder::new("{collection_name}")
-        .add_prefetch(PrefetchQueryBuilder::default()
-            .query(Query::new_nearest(vec![1.0, 23.0, 45.0, 67.0]))
-            .using("mlr_byte")
-            .limit(1000u64)
-        )
-        .query(Query::new_nearest(vec![0.01, 0.299, 0.45, 0.67]))
-        .using("full")
-        .limit(10u64)
-).await?;
-```
-
-```java
-import static io.qdrant.client.QueryFactory.nearest;
-
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.PrefetchQuery;
-import io.qdrant.client.grpc.Points.QueryPoints;
-
-QdrantClient client =
-    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
-
-client
-    .queryAsync(
-        QueryPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .addPrefetch(
-                PrefetchQuery.newBuilder()
-                    .setQuery(nearest(1, 23, 45, 67))	// <------------- small byte vector
-                    .setLimit(1000)
-                    .setUsing("mrl_byte")
-                    .build())
-            .setQuery(nearest(0.01f, 0.299f, 0.45f, 0.67f))	 // <-- full vector
-            .setUsing("full")
-            .setLimit(10)
-            .build())
-    .get();
-```
-
-```csharp
-using Qdrant.Client;
-using Qdrant.Client.Grpc;
-
-var client = new QdrantClient("localhost", 6334);
-
-await client.QueryAsync(
-  collectionName: "{collection_name}",
-  prefetch: new List<PrefetchQuery> {
-    new() {
-      Query = new float[] { 1,23, 45, 67 }, // <------------- small byte vector
-        Using = "mrl_byte",
-        Limit = 1000
-    }
-  },
-  query: new float[] { 0.01f, 0.299f, 0.45f, 0.67f }, // <-- full vector
-  usingVector: "full",
-  limit: 10
-);
-```
-
-```go
-import (
-	"context"
-
-	"github.com/qdrant/go-client/qdrant"
-)
-
-client, err := qdrant.NewClient(&qdrant.Config{
-	Host: "localhost",
-	Port: 6334,
-})
-
-client.Query(context.Background(), &qdrant.QueryPoints{
-	CollectionName: "{collection_name}",
-	Prefetch: []*qdrant.PrefetchQuery{
-		{
-			Query: qdrant.NewQueryDense([]float32{1, 23, 45, 67}),
-			Using: qdrant.PtrOf("mrl_byte"),
-			Limit: qdrant.PtrOf(uint64(1000)),
-		},
-	},
-	Query: qdrant.NewQueryDense([]float32{0.01, 0.299, 0.45, 0.67}),
-	Using: qdrant.PtrOf("full"),
-})
-```
+{{< code-snippet path="/documentation/headless/snippets/query-points/hybrid-rescoring/" >}}
 
 Fetch 100 results using the default vector, then re-score them using a multi-vector to get the top 10.
 
-```http
-POST /collections/{collection_name}/points/query
-{
-    "prefetch": {
-        "query": [0.01, 0.45, 0.67, ...], // <-- dense vector
-        "limit": 100
-    },
-    "query": [           // <─┐
-        [0.1, 0.2, ...], // < │
-        [0.2, 0.1, ...], // < ├─ multi-vector
-        [0.8, 0.9, ...]  // < │
-    ],                   // <─┘       
-    "using": "colbert",
-    "limit": 10
-}
-```
-
-```python
-from qdrant_client import QdrantClient, models
-
-client = QdrantClient(url="http://localhost:6333")
-
-client.query_points(
-    collection_name="{collection_name}",
-    prefetch=models.Prefetch(
-        query=[0.01, 0.45, 0.67, 0.53],  # <-- dense vector
-        limit=100,
-    ),
-    query=[
-        [0.1, 0.2, 0.32],  # <─┐
-        [0.2, 0.1, 0.52],  # < ├─ multi-vector
-        [0.8, 0.9, 0.93],  # < ┘
-    ],
-    using="colbert",
-    limit=10,
-)
-```
-
-```typescript
-import { QdrantClient } from "@qdrant/js-client-rest";
-
-const client = new QdrantClient({ host: "localhost", port: 6333 });
-
-client.query("{collection_name}", {
-    prefetch: {
-        query: [1, 23, 45, 67], // <------------- small byte vector
-        limit: 100,
-    },
-    query: [
-        [0.1, 0.2], // <─┐
-        [0.2, 0.1], // < ├─ multi-vector
-        [0.8, 0.9], // < ┘
-    ],
-    using: 'colbert',
-    limit: 10,
-});
-```
-
-```rust
-use qdrant_client::Qdrant;
-use qdrant_client::qdrant::{PrefetchQueryBuilder, Query, QueryPointsBuilder};
-
-let client = Qdrant::from_url("http://localhost:6334").build()?;
-
-client.query(
-    QueryPointsBuilder::new("{collection_name}")
-        .add_prefetch(PrefetchQueryBuilder::default()
-            .query(Query::new_nearest(vec![0.01, 0.45, 0.67]))
-            .limit(100u64)
-        )
-        .query(Query::new_nearest(vec![
-            vec![0.1, 0.2],
-            vec![0.2, 0.1],
-            vec![0.8, 0.9],
-        ]))
-        .using("colbert")
-        .limit(10u64)
-).await?;
-```
-
-```java
-import static io.qdrant.client.QueryFactory.nearest;
-
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.PrefetchQuery;
-import io.qdrant.client.grpc.Points.QueryPoints;
-
-
-QdrantClient client =
-    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
-
-client
-    .queryAsync(
-        QueryPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .addPrefetch(
-                PrefetchQuery.newBuilder()
-                    .setQuery(nearest(0.01f, 0.45f, 0.67f)) // <-- dense vector
-                    .setLimit(100)
-                    .build())
-            .setQuery(
-                nearest(
-                    new float[][] {
-                      {0.1f, 0.2f},	// <─┐
-                      {0.2f, 0.1f},	// < ├─ multi-vector
-                      {0.8f, 0.9f}	// < ┘
-                    }))
-            .setUsing("colbert")
-            .setLimit(10)
-            .build())
-    .get();
-```
-
-```csharp
-using Qdrant.Client;
-using Qdrant.Client.Grpc;
-
-var client = new QdrantClient("localhost", 6334);
-
-await client.QueryAsync(
-  collectionName: "{collection_name}",
-  prefetch: new List <PrefetchQuery> {
-    new() {
-      Query = new float[] { 0.01f, 0.45f, 0.67f	},	// <-- dense vector****
-        Limit = 100
-    }
-  },
-  query: new float[][] {
-    [0.1f, 0.2f], // <─┐
-    [0.2f, 0.1f], // < ├─ multi-vector
-    [0.8f, 0.9f]  // < ┘
-  },
-  usingVector: "colbert",
-  limit: 10
-);
-```
-
-```go
-import (
-	"context"
-
-	"github.com/qdrant/go-client/qdrant"
-)
-
-client, err := qdrant.NewClient(&qdrant.Config{
-	Host: "localhost",
-	Port: 6334,
-})
-
-client.Query(context.Background(), &qdrant.QueryPoints{
-	CollectionName: "{collection_name}",
-	Prefetch: []*qdrant.PrefetchQuery{
-		{
-			Query: qdrant.NewQueryDense([]float32{0.01, 0.45, 0.67}),
-			Limit: qdrant.PtrOf(uint64(100)),
-		},
-	},
-	Query: qdrant.NewQueryMulti([][]float32{
-		{0.1, 0.2},
-		{0.2, 0.1},
-		{0.8, 0.9},
-	}),
-	Using: qdrant.PtrOf("colbert"),
-})
-```
+{{< code-snippet path="/documentation/headless/snippets/query-points/hybrid-rescoring-multivector/" >}}
 
 It is possible to combine all the above techniques in a single query:
 
-```http
-POST /collections/{collection_name}/points/query
-{
-    "prefetch": {
-        "prefetch": {
-            "query": [1, 23, 45, 67], // <------ small byte vector
-            "using": "mrl_byte"
-            "limit": 1000
-        },
-        "query": [0.01, 0.45, 0.67, ...], // <-- full dense vector
-        "using": "full"
-        "limit": 100
-    },
-    "query": [           // <─┐
-        [0.1, 0.2, ...], // < │
-        [0.2, 0.1, ...], // < ├─ multi-vector
-        [0.8, 0.9, ...]  // < │
-    ],                   // <─┘       
-    "using": "colbert",
-    "limit": 10
-}
-```
-
-```python
-from qdrant_client import QdrantClient, models
-
-client = QdrantClient(url="http://localhost:6333")
-
-client.query_points(
-    collection_name="{collection_name}",
-    prefetch=models.Prefetch(
-        prefetch=models.Prefetch(
-            query=[1, 23, 45, 67],  # <------ small byte vector
-            using="mrl_byte",
-            limit=1000,
-        ),
-        query=[0.01, 0.45, 0.67],  # <-- full dense vector
-        using="full",
-        limit=100,
-    ),
-    query=[
-        [0.17, 0.23, 0.52],  # <─┐
-        [0.22, 0.11, 0.63],  # < ├─ multi-vector
-        [0.86, 0.93, 0.12],  # < ┘
-    ],
-    using="colbert",
-    limit=10,
-)
-```
-
-```typescript
-import { QdrantClient } from "@qdrant/js-client-rest";
-
-const client = new QdrantClient({ host: "localhost", port: 6333 });
-
-client.query("{collection_name}", {
-  prefetch: {
-    prefetch: {
-      query: [1, 23, 45, 67], // <------------- small byte vector
-      using: 'mrl_byte',
-      limit: 1000,
-    },
-    query: [0.01, 0.45, 0.67],  // <-- full dense vector
-    using: 'full',
-    limit: 100,
-  },
-  query: [
-    [0.1, 0.2], // <─┐
-    [0.2, 0.1], // < ├─ multi-vector
-    [0.8, 0.9], // < ┘
-  ],
-  using: 'colbert',
-  limit: 10,
-});
-```
-
-```rust
-use qdrant_client::Qdrant;
-use qdrant_client::qdrant::{PrefetchQueryBuilder, Query, QueryPointsBuilder};
-
-let client = Qdrant::from_url("http://localhost:6334").build()?;
-
-client.query(
-    QueryPointsBuilder::new("{collection_name}")
-        .add_prefetch(PrefetchQueryBuilder::default()
-            .add_prefetch(PrefetchQueryBuilder::default()
-                .query(Query::new_nearest(vec![1.0, 23.0, 45.0, 67.0]))
-                .using("mlr_byte")
-                .limit(1000u64)
-            )
-            .query(Query::new_nearest(vec![0.01, 0.45, 0.67]))
-            .using("full")
-            .limit(100u64)
-        )
-        .query(Query::new_nearest(vec![
-            vec![0.1, 0.2],
-            vec![0.2, 0.1],
-            vec![0.8, 0.9],
-        ]))
-        .using("colbert")
-        .limit(10u64)
-).await?;
-```
-
-```java
-import static io.qdrant.client.QueryFactory.nearest;
-
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.PrefetchQuery;
-import io.qdrant.client.grpc.Points.QueryPoints;
-
-QdrantClient client =
-    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
-
-client
-    .queryAsync(
-        QueryPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .addPrefetch(
-                PrefetchQuery.newBuilder()
-                    .addPrefetch(
-                        PrefetchQuery.newBuilder()
-                            .setQuery(nearest(1, 23, 45, 67))	// <------------- small byte vector
-                            .setUsing("mrl_byte")
-                            .setLimit(1000)
-                            .build())
-                    .setQuery(nearest(0.01f, 0.45f, 0.67f)) // <-- dense vector
-                    .setUsing("full")
-                    .setLimit(100)
-                    .build())
-            .setQuery(
-                nearest(
-                    new float[][] {
-                      {0.1f, 0.2f},	// <─┐
-                      {0.2f, 0.1f},	// < ├─ multi-vector
-                      {0.8f, 0.9f}	// < ┘
-                    }))
-            .setUsing("colbert")
-            .setLimit(10)
-            .build())
-    .get();
-```
-
-```csharp
-using Qdrant.Client;
-using Qdrant.Client.Grpc;
-
-var client = new QdrantClient("localhost", 6334);
-
-await client.QueryAsync(
-  collectionName: "{collection_name}",
-  prefetch: new List <PrefetchQuery> {
-    new() {
-      Prefetch = {
-          new List <PrefetchQuery> {
-            new() {
-              Query = new float[] { 1, 23, 45, 67 }, // <------------- small byte vector
-                Using = "mrl_byte",
-                Limit = 1000
-            },
-          }
-        },
-        Query = new float[] {0.01f, 0.45f, 0.67f}, // <-- dense vector
-        Using = "full",
-        Limit = 100
-    }
-  },
-  query: new float[][] {
-    [0.1f, 0.2f], // <─┐
-    [0.2f, 0.1f], // < ├─ multi-vector
-    [0.8f, 0.9f]  // < ┘
-  },
-  usingVector: "colbert",
-  limit: 10
-);
-```
-
-```go
-import (
-	"context"
-
-	"github.com/qdrant/go-client/qdrant"
-)
-
-client, err := qdrant.NewClient(&qdrant.Config{
-	Host: "localhost",
-	Port: 6334,
-})
-
-client.Query(context.Background(), &qdrant.QueryPoints{
-	CollectionName: "{collection_name}",
-	Prefetch: []*qdrant.PrefetchQuery{
-		{
-			Prefetch: []*qdrant.PrefetchQuery{
-				{
-					Query: qdrant.NewQueryDense([]float32{1, 23, 45, 67}),
-					Using: qdrant.PtrOf("mrl_byte"),
-					Limit: qdrant.PtrOf(uint64(1000)),
-				},
-			},
-			Query: qdrant.NewQueryDense([]float32{0.01, 0.45, 0.67}),
-			Limit: qdrant.PtrOf(uint64(100)),
-			Using: qdrant.PtrOf("full"),
-		},
-	},
-	Query: qdrant.NewQueryMulti([][]float32{
-		{0.1, 0.2},
-		{0.2, 0.1},
-		{0.8, 0.9},
-	}),
-	Using: qdrant.PtrOf("colbert"),
-})
-```
-
-## Flexible interface
-
-Other than the introduction of `prefetch`, the `Query API` has been designed to make querying simpler. Let's look at a few bonus features:
-
-### Query by ID
-
-Whenever you need to use a vector as an input, you can always use a [point ID](/documentation/concepts/points/#point-ids) instead.
-
-```http
-POST /collections/{collection_name}/points/query
-{
-    "query": "43cf51e2-8777-4f52-bc74-c2cbde0c8b04" // <--- point id
-}
-```
-
-```python
-from qdrant_client import QdrantClient, models
-
-client = QdrantClient(url="http://localhost:6333")
-
-client.query_points(
-    collection_name="{collection_name}",
-    query="43cf51e2-8777-4f52-bc74-c2cbde0c8b04",  # <--- point id
-)
-```
-
-```typescript
-import { QdrantClient } from "@qdrant/js-client-rest";
-
-const client = new QdrantClient({ host: "localhost", port: 6333 });
-
-client.query("{collection_name}", {
-    query: '43cf51e2-8777-4f52-bc74-c2cbde0c8b04', // <--- point id
-});
-```
-
-```rust
-use qdrant_client::Qdrant;
-use qdrant_client::qdrant::{Condition, Filter, PointId, Query, QueryPointsBuilder};
-
-let client = Qdrant::from_url("http://localhost:6334").build()?;
-
-client
-    .query(
-        QueryPointsBuilder::new("{collection_name}")
-            .query(Query::new_nearest("43cf51e2-8777-4f52-bc74-c2cbde0c8b04")),
-    )
-    .await?;
-```
-
-```java
-import static io.qdrant.client.QueryFactory.nearest;
-
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.QueryPoints;
-import java.util.UUID;
-
-QdrantClient client =
-    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
-
-client
-    .queryAsync(
-        QueryPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .setQuery(nearest(UUID.fromString("43cf51e2-8777-4f52-bc74-c2cbde0c8b04")))
-            .build())
-    .get();
-```
-
-```csharp
-using Qdrant.Client;
-
-var client = new QdrantClient("localhost", 6334);
-
-await client.QueryAsync(
-	collectionName: "{collection_name}",
-	query: Guid.Parse("43cf51e2-8777-4f52-bc74-c2cbde0c8b04") // <--- point id
-);
-```
-
-```go
-import (
-	"context"
-
-	"github.com/qdrant/go-client/qdrant"
-)
-
-client, err := qdrant.NewClient(&qdrant.Config{
-	Host: "localhost",
-	Port: 6334,
-})
-
-client.Query(context.Background(), &qdrant.QueryPoints{
-	CollectionName: "{collection_name}",
-	Query:          qdrant.NewQueryID(qdrant.NewID("43cf51e2-8777-4f52-bc74-c2cbde0c8b04")),
-})
-```
-
-The above example will fetch the default vector from the point with this id, and use it as the query vector.
-
-If the `using` parameter is also specified, Qdrant will use the vector with that name.
-
-It is also possible to reference an ID from a different collection, by setting the `lookup_from` parameter.
-
-```http
-POST /collections/{collection_name}/points/query
-{
-    "query": "43cf51e2-8777-4f52-bc74-c2cbde0c8b04", // <--- point id
-    "using": "512d-vector"
-    "lookup_from": {
-        "collection": "another_collection", // <--- other collection name
-        "vector": "image-512" // <--- vector name in the other collection
-    }
-}
-```
-
-```python
-from qdrant_client import QdrantClient, models
-
-client = QdrantClient(url="http://localhost:6333")
-
-client.query_points(
-    collection_name="{collection_name}",
-    query="43cf51e2-8777-4f52-bc74-c2cbde0c8b04",  # <--- point id
-    using="512d-vector",
-    lookup_from=models.LookupLocation(
-        collection="another_collection",  # <--- other collection name
-        vector="image-512",  # <--- vector name in the other collection
-    )
-)
-```
-
-```typescript
-import { QdrantClient } from "@qdrant/js-client-rest";
-
-const client = new QdrantClient({ host: "localhost", port: 6333 });
-
-client.query("{collection_name}", {
-    query: '43cf51e2-8777-4f52-bc74-c2cbde0c8b04', // <--- point id
-    using: '512d-vector',
-    lookup_from: {
-        collection: 'another_collection', // <--- other collection name
-        vector: 'image-512', // <--- vector name in the other collection
-    }
-});
-```
-
-```rust
-use qdrant_client::Qdrant;
-use qdrant_client::qdrant::{LookupLocationBuilder, PointId, Query, QueryPointsBuilder};
-
-let client = Qdrant::from_url("http://localhost:6334").build()?;
-
-client.query(
-    QueryPointsBuilder::new("{collection_name}")
-        .query(Query::new_nearest("43cf51e2-8777-4f52-bc74-c2cbde0c8b04"))
-        .using("512d-vector")
-        .lookup_from(
-            LookupLocationBuilder::new("another_collection")
-                .vector_name("image-512")
-        )
-).await?;
-```
-
-```java
-import static io.qdrant.client.QueryFactory.nearest;
-
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.LookupLocation;
-import io.qdrant.client.grpc.Points.QueryPoints;
-import java.util.UUID;
-
-QdrantClient client =
-    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
-
-client
-    .queryAsync(
-        QueryPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .setQuery(nearest(UUID.fromString("43cf51e2-8777-4f52-bc74-c2cbde0c8b04")))
-            .setUsing("512d-vector")
-            .setLookupFrom(
-                LookupLocation.newBuilder()
-                    .setCollectionName("another_collection")
-                    .setVectorName("image-512")
-                    .build())
-            .build())
-    .get();
-```
-
-```csharp
-using Qdrant.Client;
-
-var client = new QdrantClient("localhost", 6334);
-
-await client.QueryAsync(
-  collectionName: "{collection_name}",
-  query: Guid.Parse("43cf51e2-8777-4f52-bc74-c2cbde0c8b04"), // <--- point id
-  usingVector: "512d-vector",
-  lookupFrom: new() {
-    CollectionName = "another_collection", // <--- other collection name
-      VectorName = "image-512" // <--- vector name in the other collection
-  }
-);
-```
-
-```go
-import (
-	"context"
-
-	"github.com/qdrant/go-client/qdrant"
-)
-
-client, err := qdrant.NewClient(&qdrant.Config{
-	Host: "localhost",
-	Port: 6334,
-})
-
-client.Query(context.Background(), &qdrant.QueryPoints{
-	CollectionName: "{collection_name}",
-	Query:          qdrant.NewQueryID(qdrant.NewID("43cf51e2-8777-4f52-bc74-c2cbde0c8b04")),
-	Using:          qdrant.PtrOf("512d-vector"),
-	LookupFrom: &qdrant.LookupLocation{
-		CollectionName: "another_collection",
-		VectorName:     qdrant.PtrOf("image-512"),
-	},
-})
-```
-
-In the case above, Qdrant will fetch the `"image-512"` vector from the specified point id in the 
-collection `another_collection`.
+{{< code-snippet path="/documentation/headless/snippets/query-points/hybrid-rescoring-multistage/" >}}
+
+## Score boosting
+
+_Available as of v1.14.0_
+
+When introducing vector search to specific applications, sometimes business logic needs to be considered for ranking the final list of results.
+
+A quick example is [our own documentation search bar](https://github.com/qdrant/page-search).
+It has vectors for every part of the documentation site. If one were to perform a search by "just" using the vectors, all kinds of elements would be equally considered good results.
+However, when searching for documentation, we can establish a hierarchy of importance:
+
+`title > content > snippets`
+
+One way to solve this is to weight the results based on the kind of element.
+For example, we can assign a higher weight to titles and content, and keep snippets unboosted.
+
+Pseudocode would be something like:
+
+`score = score + (is_title * 0.5) + (is_content * 0.25)`
+
+Query API can rescore points with custom formulas. They can be based on:
+- Dynamic payload values
+- Conditions
+- Scores of prefetches
+
+To express the formula, the syntax uses objects to identify each element.
+Taking the documentation example, the request would look like this:
+
+{{< code-snippet path="/documentation/headless/snippets/query-points/score-boost-tags/" >}}
+
+There are multiple expressions available, check the [API docs for specific details](https://api.qdrant.tech/v-1-14-x/api-reference/search/query-points#request.body.query.Query%20Interface.Query.Formula%20Query.formula).
+- **constant** - A floating point number. e.g. `0.5`.
+- `"$score"` - Reference to the score of the point in the prefetch. This is the same as `"$score[0]"`.
+- `"$score[0]"`, `"$score[1]"`, `"$score[2]"`, ... - When using multiple prefetches, you can reference specific prefetch with the index within the array of prefetches.
+- **payload key** - Any plain string will refer to a payload key. This uses the jsonpath format used in every other place, e.g. `key` or `key.subkey`. It will try to extract a number from the given key.
+- **condition** - A filtering condition. If the condition is met, it becomes `1.0`, otherwise `0.0`.
+- **mult** - Multiply an array of expressions.
+- **sum** - Sum an array of expressions.
+- **div** - Divide an expression by another expression.
+- **abs** - Absolute value of an expression.
+- **pow** - Raise an expression to the power of another expression.
+- **sqrt** - Square root of an expression.
+- **log10** - Base 10 logarithm of an expression.
+- **ln** - Natural logarithm of an expression.
+- **exp** - Exponential function of an expression (`e^x`).
+- **geo distance** - Haversine distance between two geographic points. Values need to be `{ "lat": 0.0, "lon": 0.0 }` objects.
+- **decay** - Apply a decay function to an expression, which clamps the output between 0 and 1. Available decay functions are **linear**, **exponential**, and **gaussian**. [See more](#boost-points-closer-to-user).
+- **datetime** - Parse a datetime string (see formats [here](/documentation/concepts/payload/#datetime)), and use it as a POSIX timestamp, in seconds.
+- **datetime key** - Specify that a payload key contains a datetime string to be parsed into POSIX seconds.
+
+It is possible to define a default for when the variable (either from payload or prefetch score) is not found. This is given in the form of a mapping from variable to value.
+If there is no variable, and no defined default, a default value of `0.0` is used.
 
 <aside role="status">
- The fetched vector(s) must match the characteristics of the <code>using</code> vector, otherwise, an error will be returned.
+
+**Considerations when using formula queries:**
+
+- Formula queries can only be used as a rescoring step.
+- Formula results are always sorted in descending order (bigger is better). **For euclidean scores, make sure to negate them** to sort closest to farthest.
+- If a score or variable is not available, and there is no default value, it will return an error.
+- If a value is not a number (or the expected type), it will return an error.
+- To leverage payload indices, single-value arrays are considered the same as the inner value. For example: `[0.2]` is the same as `0.2`, but `[0.2, 0.7]` will be interpreted as `[0.2, 0.7]`
+- Multiplication and division are lazily evaluated, meaning that if a 0 is encountered, the rest of operations don't execute (e.g. `0.0 * condition` won't check the condition).
+- Payload variables used within the formula also benefit from having payload indices. Please try to always have a payload index set up for the variables used in the formula for better performance.
 </aside>
 
+### Boost points closer to user
+Another example. Combine the score with how close the result is to a user.
 
-## Re-ranking with payload values
+Considering each point has an associated geo location, we can calculate the distance between the point and the request's location.
 
-The Query API can retrieve points not only by vector similarity but also by the content of the payload.
+Assuming we have cosine scores in the prefetch, we can use a helper function to clamp the geographical distance between 0 and 1, by using a decay function. Once clamped, we can sum the score and the distance together. Pseudocode:
 
-There are two ways to make use of the payload in the query:
+`score = score + gauss_decay(distance)`
 
-* Apply filters to the payload fields, to only get the points that match the filter.
-* Order the results by the payload field.
+In this case we use a **gauss_decay** function.
 
-Let's see an example of when this might be useful:
+{{< code-snippet path="/documentation/headless/snippets/query-points/score-boost-closer-to-user/" >}}
 
-```http
-POST /collections/{collection_name}/points/query
-{
-    "prefetch": [
-        {
-            "query": [0.01, 0.45, 0.67, ...], // <-- dense vector
-            "filter": {
-                "must": {
-                    "key": "color",
-                    "match": {
-                        "value": "red"
-                    }
-                }
-            },
-            "limit": 10
-        },
-        {
-            "query": [0.01, 0.45, 0.67, ...], // <-- dense vector
-            "filter": {
-                "must": {
-                    "key": "color",
-                    "match": {
-                        "value": "green"
-                    }
-                }
-            },
-            "limit": 10
-        }
-    ],
-    "query": { "order_by": "price" }
-}
-```
+For all decay functions, there are these parameters available
 
-```python
-from qdrant_client import QdrantClient, models
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `x` | N/A | The value to decay |
+| `target` | 0.0 | The value at which the decay will be at its peak. For distances it is usually set at 0.0, but can be set to any value. |
+| `scale` | 1.0 | The value at which the decay function will be equal to `midpoint`. This is in terms of `x` units, for example, if `x` is in meters, `scale` of 5000 means 5km. Must be a non-zero positive number |
+| `midpoint` | 0.5 | Output is `midpoint` when `x` equals `scale`. Must be in the range (0.0, 1.0), exclusive |
 
-client = QdrantClient(url="http://localhost:6333")
+The formulas for each decay function are as follows:
 
-client.query_points(
-    collection_name="{collection_name}",
-    prefetch=[
-        models.Prefetch(
-            query=[0.01, 0.45, 0.67],  # <-- dense vector
-            filter=models.Filter(
-                must=models.FieldCondition(
-                    key="color",
-                    match=models.MatchValue(value="red"),
-                ),
-            ),
-            limit=10,
-        ),
-        models.Prefetch(
-            query=[0.01, 0.45, 0.67],  # <-- dense vector
-            filter=models.Filter(
-                must=models.FieldCondition(
-                    key="color",
-                    match=models.MatchValue(value="green"),
-                ),
-            ),
-            limit=10,
-        ),
-    ],
-    query=models.OrderByQuery(order_by="price"),
-)
-```
 
-```typescript
-import { QdrantClient } from "@qdrant/js-client-rest";
+<iframe src="https://www.desmos.com/calculator/idv5hknwb1?embed" width="600" height="400" style="border: 1px solid #ccc" frameborder=0 class="mx-auto d-block"></iframe>
 
-const client = new QdrantClient({ host: "localhost", port: 6333 });
 
-client.query("{collection_name}", {
-    prefetch: [
-        {
-            query: [0.01, 0.45, 0.67], // <-- dense vector
-            filter: {
-                must: {
-                    key: 'color',
-                    match: {
-                        value: 'red',
-                    },
-                }
-            },
-            limit: 10,
-        },
-        {
-            query: [0.01, 0.45, 0.67], // <-- dense vector
-            filter: {
-                must: {
-                    key: 'color',
-                    match: {
-                        value: 'green',
-                    },
-                }
-            },
-            limit: 10,
-        },
-    ],
-    query: {
-        order_by: 'price',
-    },
-});
-```
+#### Decay functions
 
-```rust
-use qdrant_client::Qdrant;
-use qdrant_client::qdrant::{Condition, Filter, PrefetchQueryBuilder, Query, QueryPointsBuilder};
 
-let client = Qdrant::from_url("http://localhost:6334").build()?;
+**`lin_decay`** (green), range: `[0, 1]`
 
-client.query(
-    QueryPointsBuilder::new("{collection_name}")
-        .add_prefetch(PrefetchQueryBuilder::default()
-            .query(Query::new_nearest(vec![0.01, 0.45, 0.67]))
-            .filter(Filter::must([Condition::matches(
-                "color",
-                "red".to_string(),
-            )]))
-            .limit(10u64)
-        )
-        .add_prefetch(PrefetchQueryBuilder::default()
-            .query(Query::new_nearest(vec![0.01, 0.45, 0.67]))
-            .filter(Filter::must([Condition::matches(
-                "color",
-                "green".to_string(),
-            )]))
-            .limit(10u64)
-        )
-        .query(Query::new_order_by("price"))
-).await?;
-```
+$$ \text{lin_decay}(x) = \max\left(0,\ -\frac{\left(1-m_{idpoint}\right)}{s_{cale}}\cdot {abs}\left(x-t_{arget}\right)+1\right) $$
 
-```java
-import static io.qdrant.client.ConditionFactory.matchKeyword;
-import static io.qdrant.client.QueryFactory.nearest;
-import static io.qdrant.client.QueryFactory.orderBy;
+**`exp_decay`** (red), range: `(0, 1]`
 
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.Filter;
-import io.qdrant.client.grpc.Points.PrefetchQuery;
-import io.qdrant.client.grpc.Points.QueryPoints;
+$$ \text{exp_decay}(x) = \exp\left(\frac{\ln\left(m_{idpoint}\right)}{s_{cale}}\cdot {abs}\left(x-t_{arget}\right)\right) $$
 
-QdrantClient client =
-    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
+**`gauss_decay`** (purple), range: `(0, 1]`
 
-client
-    .queryAsync(
-        QueryPoints.newBuilder()
-            .setCollectionName("{collection_name}")
-            .addPrefetch(
-                PrefetchQuery.newBuilder()
-                    .setQuery(nearest(0.01f, 0.45f, 0.67f))
-                    .setFilter(
-                        Filter.newBuilder().addMust(matchKeyword("color", "red")).build())
-                    .setLimit(10)
-                    .build())
-            .addPrefetch(
-                PrefetchQuery.newBuilder()
-                    .setQuery(nearest(0.01f, 0.45f, 0.67f))
-                    .setFilter(
-                        Filter.newBuilder().addMust(matchKeyword("color", "green")).build())
-                    .setLimit(10)
-                    .build())
-            .setQuery(orderBy("price"))
-            .build())
-    .get();
-```
-
-```csharp
-using Qdrant.Client;
-using Qdrant.Client.Grpc;
-using static Qdrant.Client.Grpc.Conditions;
-
-var client = new QdrantClient("localhost", 6334);
-
-await client.QueryAsync(
-  collectionName: "{collection_name}",
-  prefetch: new List <PrefetchQuery> {
-    new() {
-      Query = new float[] {
-          0.01f, 0.45f, 0.67f
-        },
-        Filter = MatchKeyword("color", "red"),
-        Limit = 10
-    },
-    new() {
-      Query = new float[] {
-          0.01f, 0.45f, 0.67f
-        },
-        Filter = MatchKeyword("color", "green"),
-        Limit = 10
-    }
-  },
-  query: (OrderBy) "price",
-  limit: 10
-);
-```
-
-```go
-import (
-	"context"
-
-	"github.com/qdrant/go-client/qdrant"
-)
-
-client, err := qdrant.NewClient(&qdrant.Config{
-	Host: "localhost",
-	Port: 6334,
-})
-
-client.Query(context.Background(), &qdrant.QueryPoints{
-	CollectionName: "{collection_name}",
-	Prefetch: []*qdrant.PrefetchQuery{
-		{
-			Query: qdrant.NewQuery(0.01, 0.45, 0.67),
-			Filter: &qdrant.Filter{
-				Must: []*qdrant.Condition{
-					qdrant.NewMatch("color", "red"),
-				},
-			},
-		},
-		{
-			Query: qdrant.NewQuery(0.01, 0.45, 0.67),
-			Filter: &qdrant.Filter{
-				Must: []*qdrant.Condition{
-					qdrant.NewMatch("color", "green"),
-				},
-			},
-		},
-	},
-	Query: qdrant.NewQueryOrderBy(&qdrant.OrderBy{
-		Key: "price",
-	}),
-})
-```
-
-In this example, we first fetch 10 points with the color `"red"` and then 10 points with the color `"green"`.
-Then, we order the results by the price field.
-
-This is how we can guarantee even sampling of both colors in the results and also get the cheapest ones first.
+$$ \text{gauss_decay}(x) = \exp\left(\frac{\ln\left(m_{idpoint}\right)}{s_{cale}^{2}}\cdot \left(x-t_{arget}\right)^{2}\right) $$
 
 ## Grouping
 
@@ -1287,114 +204,6 @@ It is possible to group results by a certain field. This is useful when you have
 
 REST API ([Schema](https://api.qdrant.tech/master/api-reference/search/query-points-groups)):
 
-```http
-POST /collections/{collection_name}/points/query/groups
-{
-    "query": [0.01, 0.45, 0.67],
-    group_by="document_id",  # Path of the field to group by
-    limit=4,  # Max amount of groups
-    group_size=2,  # Max amount of points per group
-}
-```
-
-```python
-from qdrant_client import QdrantClient, models
-
-client = QdrantClient(url="http://localhost:6333")
-
-client.query_points_groups(
-    collection_name="{collection_name}",
-    query=[0.01, 0.45, 0.67],
-    group_by="document_id",
-    limit=4,
-    group_size=2,
-)
-```
-
-```typescript
-import { QdrantClient } from "@qdrant/js-client-rest";
-
-const client = new QdrantClient({ host: "localhost", port: 6333 });
-
-client.queryGroups("{collection_name}", {
-    query: [0.01, 0.45, 0.67],
-    group_by: "document_id",
-    limit: 4,
-    group_size: 2,
-});
-```
-
-```rust
-use qdrant_client::Qdrant;
-use qdrant_client::qdrant::{Query, QueryPointsBuilder};
-
-let client = Qdrant::from_url("http://localhost:6334").build()?;
-
-client.query_groups(
-    QueryPointGroupsBuilder::new("{collection_name}", "document_id")
-        .query(Query::from(vec![0.01, 0.45, 0.67]))
-        .limit(4u64)
-        .group_size(2u64)
-).await?;
-```
-
-```java
-import static io.qdrant.client.QueryFactory.nearest;
-
-import io.qdrant.client.QdrantClient;
-import io.qdrant.client.QdrantGrpcClient;
-import io.qdrant.client.grpc.Points.QueryPointGroups;
-
-QdrantClient client =
-    new QdrantClient(QdrantGrpcClient.newBuilder("localhost", 6334, false).build());
-
-client
-    .queryGroupsAsync(
-        QueryPointGroups.newBuilder()
-            .setCollectionName("{collection_name}")
-            .setGroupBy("document_id")
-            .setQuery(nearest(0.01f, 0.45f, 0.67f))
-            .setLimit(4)
-            .setGroupSize(2)
-            .build())
-    .get();
-```
-
-```csharp
-using Qdrant.Client;
-using Qdrant.Client.Grpc;
-
-var client = new QdrantClient("localhost", 6334);
-
-await client.QueryGroupsAsync(
-  collectionName: "{collection_name}",
-  groupBy: "document_id",
-  query: new float[] {
-    0.01f, 0.45f, 0.67f
-  },
-  limit: 4,
-  groupSize: 2
-);
-```
-
-```go
-import (
-	"context"
-
-	"github.com/qdrant/go-client/qdrant"
-)
-
-client, err := qdrant.NewClient(&qdrant.Config{
-	Host: "localhost",
-	Port: 6334,
-})
-
-client.QueryGroups(context.Background(), &qdrant.QueryPointGroups{
-	CollectionName: "{collection_name}",
-	Query:          qdrant.NewQuery(0.01, 0.45, 0.67),
-	GroupBy:        "document_id",
-	GroupSize:      qdrant.PtrOf(uint64(2)),
-})
-```
+{{< code-snippet path="/documentation/headless/snippets/query-groups/basic/" >}}
 
 For more information on the `grouping` capabilities refer to the reference documentation for search with [grouping](/documentation/concepts/search/#search-groups) and [lookup](/documentation/concepts/search/#lookup-in-groups).

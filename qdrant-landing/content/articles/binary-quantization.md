@@ -114,7 +114,9 @@ if not client.collection_exists(collection_name):
         ),
         optimizers_config=models.OptimizersConfigDiff(
             default_segment_number=5,
-            indexing_threshold=0,
+        ),
+        hnsw_config=models.HnswConfigDiff(
+        m=0,
         ),
         quantization_config=models.BinaryQuantization(
             binary=models.BinaryQuantizationConfig(always_ram=True),
@@ -122,11 +124,11 @@ if not client.collection_exists(collection_name):
     )
 ```
 
-#### What is happening in the OptimizerConfig? 
+#### What is happening in the HnswConfig? 
 
-We're setting `indexing_threshold` to 0 i.e. disabling the indexing to zero. This allows faster uploads of vectors and payloads. We will turn it back on down below, once all the data is loaded
+We're setting `m` to 0 i.e. disabling the HNSW graph construction. This allows faster uploads of vectors and payloads. We will turn it back on down below, once all the data is loaded.
 
-#### Next, we upload our vectors to this and then enable indexing: 
+#### Next, we upload our vectors to this and then enable the graph construction: 
 
 ```python
 batch_size = 10000
@@ -141,14 +143,14 @@ client.upload_collection(
 )
 ```
 
-Enable indexing again:
+Enable HNSW graph construction again:
 
 ```python
 client.update_collection(
     collection_name=f"{collection_name}",
-    optimizer_config=models.OptimizersConfigDiff(
-        indexing_threshold=20000
-    )
+    hnsw_config=models.HnswConfigDiff(
+        m=16,
+    ,
 )
 ```
 #### Configure the search parameters:
@@ -215,7 +217,6 @@ If you're working with OpenAI or Cohere embeddings, we recommend the following o
 |OpenAI text-embedding-3-large|3072|[DBpedia 1M](https://huggingface.co/datasets/Qdrant/dbpedia-entities-openai3-text-embedding-3-large-3072-1M) | 0.9966|3x|
 |OpenAI text-embedding-3-small|1536|[DBpedia 100K](https://huggingface.co/datasets/Qdrant/dbpedia-entities-openai3-text-embedding-3-small-1536-100K)| 0.9847|3x|
 |OpenAI text-embedding-3-large|1536|[DBpedia 1M](https://huggingface.co/datasets/Qdrant/dbpedia-entities-openai3-text-embedding-3-large-1536-1M)| 0.9826|3x|
-|Cohere AI embed-english-v2.0|4096|[Wikipedia](https://huggingface.co/datasets/nreimers/wikipedia-22-12-large/tree/main) 1M|0.98|2x|
 |OpenAI text-embedding-ada-002|1536|[DbPedia 1M](https://huggingface.co/datasets/KShivendu/dbpedia-entities-openai-1M) |0.98|4x|
 |Gemini|768|No Open Data| 0.9563|3x|
 |Mistral Embed|768|No Open Data| 0.9445 |3x|
@@ -228,7 +229,7 @@ If you determine that binary quantization is appropriate for your datasets and q
 
 ## What's next?
 
-Binary quantization is exceptional if you need to work with large volumes of data under high recall expectations. You can try this feature either by spinning up a [Qdrant container image](https://hub.docker.com/r/qdrant/qdrant) locally or, having us create one for you through a [free account](https://cloud.qdrant.io/login) in our cloud hosted service. 
+Binary quantization is exceptional if you need to work with large volumes of data under high recall expectations. You can try this feature either by spinning up a [Qdrant container image](https://hub.docker.com/r/qdrant/qdrant) locally or, having us create one for you through a [free account](https://cloud.qdrant.io/signup) in our cloud hosted service. 
 
 The article gives examples of data sets and configuration you can use to get going. Our documentation covers [adding large datasets to Qdrant](/documentation/tutorials/bulk-upload/) to your Qdrant instance as well as [more quantization methods](/documentation/guides/quantization/).
 

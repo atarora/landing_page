@@ -1,25 +1,26 @@
 {{ with (.Site.GetPage "enterprise-solutions/enterprise-solutions-use-cases") }}
-  <section class="enterprise-solutions-use-cases">
+  <section class="enterprise-solutions-use-cases pb-7">
     <div class="container">
-      <h2 class="enterprise-solutions-use-cases__title">{{ .Params.title }}</h2>
-      <div class="enterprise-solutions-use-cases__cases row">
+      <h2 class="enterprise-solutions-use-cases__title pt-4">{{ .Params.title }}</h2>
+      <div class="enterprise-solutions-use-cases__cases row g-4">
         {{ range $index, $element := .Params.items }}
-          <div class="col-12">
-            <div class="enterprise-solutions-use-cases__case {{ if mod $index 2 | eq 1 }}case-reversed{{ end }}">
+          <div class="{{ if eq $index 0 }}col-12{{ else }}col-12 col-lg-6{{ end }}">
+            <a
+                    href="{{ .link.url }}"
+                    class="card enterprise-solutions-use-cases__case">
               <div class="enterprise-solutions-use-cases__case-text">
                 <h3 class="enterprise-solutions-use-cases__case-title">{{ .title }}</h3>
                 <p class="enterprise-solutions-use-cases__case-description">{{ .description }}</p>
-                <a
+                <span
                   class="enterprise-solutions-use-cases__case-link link link_md align-self-start"
-                  href="{{ .link.url }}"
                 >
                   {{ .link.text }}
-                </a>
+                </span>
               </div>
               <div class="enterprise-solutions-use-cases__case-preview">
                 <img src="{{ .image.src }}" alt="{{ .image.alt }}" />
               </div>
-            </div>
+            </a>
           </div>
         {{ end }}
       </div>

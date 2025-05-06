@@ -1,6 +1,6 @@
 ---
 title: Multilingual & Multimodal RAG with LlamaIndex
-weight: 14
+weight: 5
 partition: build
 social_preview_image: /documentation/examples/multimodal-search/social_preview.png
 aliases:
@@ -36,10 +36,6 @@ First, install the required libraries `qdrant-client` and `llama-index-embedding
 ```bash
 pip install qdrant-client llama-index-embeddings-huggingface
 ```
-
-<aside role="status">
-The code for this tutorial can be found <a href="https://github.com/qdrant/examples/multimodal-search">here</a>.
-</aside>
 
 ## Dataset
 

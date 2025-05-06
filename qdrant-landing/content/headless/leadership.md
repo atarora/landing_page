@@ -30,8 +30,8 @@ teamMembers:
     position: Growth
     avatar: '/img/leadership/manuel-meyer.png'
   - id: 7
-    name: Karim Chester
+    name: Randy Petkoff
     position: Sales
-    avatar: '/img/leadership/karim-chester.png'
+    avatar: '/img/leadership/randy-petkoff.png'    
 sitemapExclude: true
 ---

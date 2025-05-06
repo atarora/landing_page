@@ -139,7 +139,7 @@ spec:
 
 If you set the `jwt_rbac` flag, you will also be able to create granular [JWT tokens for role based access control](/documentation/guides/security/#granular-access-control-with-jwt).
 
-### Configuring TLS
+### Configuring TLS for Database Access
 
 If you want to configure TLS for accessing your Qdrant database, there are two options:
 
@@ -195,3 +195,155 @@ spec:
           name: qdrant-tls
           key: tls.key
 ```
+
+### Configuring TLS for Inter-cluster Communication
+
+*Available as of Operator v2.2.0*
+
+<aside role="alert">
+The feature can be enabled only at the cluster creation. Later changes are not possible.
+</aside>
+
+If you want to encrypt communication between Qdrant nodes, you need to enable TLS by providing
+certificate, key, and root CA certificate used for generating the former.
+
+Similar to the instruction stated in the previous section, you need to create a secret:
+
+```shell
+ kubectl create secret generic qdrant-p2p-tls \
+        --from-file=tls.crt=qdrant-nodes.crt \
+        --from-file=tls.key=qdrant-nodes.key \
+        --from-file=ca.crt=root-ca.crt
+        --namespace the-qdrant-namespace
+```
+
+The resulting secret will look like this:
+
+```yaml
+apiVersion: v1
+data:
+  tls.crt: ...
+  tls.key: ...
+  ca.crt: ...
+kind: Secret
+metadata:
+  name: qdrant-p2p-tls
+  namespace: the-qdrant-namespace
+type: Opaque
+```
+You can reference the secret in the QdrantCluster spec:
+
+```yaml
+apiVersion: qdrant.io/v1
+kind: QdrantCluster
+metadata:
+  name: test-cluster
+  labels:
+    cluster-id: "my-cluster"
+    customer-id: "acme-industries"
+spec:
+  id: "my-cluster"
+  version: "v1.13.3"
+  size: 2
+  resources:
+    cpu: 100m
+    memory: "1Gi"
+    storage: "2Gi"
+  config:
+    service:
+      enable_tls: true
+    tls:
+      caCert:
+        secretKeyRef:
+          name: qdrant-p2p-tls
+          key: ca.crt
+      cert:
+        secretKeyRef:
+          name: qdrant-p2p-tls
+          key: tls.crt
+      key:
+        secretKeyRef:
+          name: qdrant-p2p-tls
+          key: tls.key
+```
+
+<aside role="status">
+The operator assigns the names to nodes in cluster according to the following convention:
+
+```
+qdrant-{spec.id}-{node-index}.qdrant-headless-{spec.id}
+```
+
+Therefore, in addition to the domain used for accessing the database, 
+the provided certificate must contain Subjective Alternative Names (SAN) for all foreseen nodes.
+It can be created with a tool of your choice, e.g., 
+using [step CLI](https://smallstep.com/docs/step-cli/installation/).
+Following the example `QdrantCluster`, the proper certificate can be obtained with:
+
+```shell
+step certificate create mydomain.com qdrant-nodes.crt qdrant-nodes.key \
+  --profile leaf --not-after 43800h \
+  --ca root-ca.crt --ca-key root-ca.key \
+  --san qdrant-my-cluster-0.qdrant-headless-my-cluster \
+  --san qdrant-my-cluster-1.qdrant-headless-my-cluster
+```
+</aside>
+
+## GPU support
+
+Starting with Qdrant 1.13 and private-cloud version 1.6.1 you can create a cluster that uses GPUs to accelarate indexing.
+
+As a prerequisite, you need to have a Kubernetes cluster with GPU support. You can check the [Kubernetes documentation](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/) for generic information on GPUs and Kubernetes, or the documentation of your specific Kubernetes distribution.
+
+Examples:
+
+* [AWS EKS GPU support](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/amazon-eks.html)
+* [Azure AKS GPU support](https://docs.microsoft.com/en-us/azure/aks/gpu-cluster)
+* [GCP GKE GPU support](https://cloud.google.com/kubernetes-engine/docs/how-to/gpus)
+* [Vultr Kubernetes GPU support](https://blogs.vultr.com/whats-new-vultr-q2-2023)
+
+Once you have a Kubernetes cluster with GPU support, you can create a QdrantCluster with GPU support:
+
+```yaml
+apiVersion: qdrant.io/v1
+kind: QdrantCluster
+metadata:
+  name: qdrant-a7d8d973-0cc5-42de-8d7b-c29d14d24840
+  labels:
+    cluster-id: "a7d8d973-0cc5-42de-8d7b-c29d14d24840"
+    customer-id: "acme-industries"
+spec:
+  id: "a7d8d973-0cc5-42de-8d7b-c29d14d24840"
+  version: "v1.13.4"
+  size: 1
+  resources:
+    cpu: 2
+    memory: "8Gi"
+    storage: "40Gi"
+  gpu:
+    gpuType: "nvidia"
+```
+
+Once the cluster Pod has started, you can check in the logs if the GPU is detected:
+
+```shell
+$ kubectl logs qdrant-a7d8d973-0cc5-42de-8d7b-c29d14d24840-0
+
+Starting initializing for pod 0
+           _                 _
+  __ _  __| |_ __ __ _ _ __ | |_
+ / _` |/ _` | '__/ _` | '_ \| __|
+| (_| | (_| | | | (_| | | | | |_
+ \__, |\__,_|_|  \__,_|_| |_|\__|
+    |_|
+
+Version: 1.13.4, build: 7abc6843
+Access web UI at http://localhost:6333/dashboard
+
+2025-03-14T10:25:30.509636Z  INFO gpu::instance: Found GPU device: NVIDIA A16-2Q
+2025-03-14T10:25:30.509679Z  INFO gpu::instance: Found GPU device: llvmpipe (LLVM 15.0.7, 256 bits)
+2025-03-14T10:25:30.509734Z  INFO gpu::device: Create GPU device NVIDIA A16-2Q
+...
+```
+
+For more GPU configuration options, see the [Qdrant Private Cloud API Reference](/documentation/private-cloud/api-reference/).

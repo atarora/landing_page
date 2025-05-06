@@ -1,3 +1,44 @@
+# Index
+- [Running locally](#running-locally)
+  - [Prerequisites](#prerequisites)
+    - [Required](#required)
+    - [Needed only for development](#needed-only-for-development)
+      - [Updating npm dependencies via hugo](#updating-npm-dependencies-via-hugo)
+  - [Run](#run)
+  - [Run with drafts](#run-with-drafts)
+  - [Build css from scss](#build-css-from-scss)
+- [Content Management](#content-management)
+  - [Main Page](#main-page)
+    - [Customers/Partners Logos](#customerspartners-logos)
+  - [Articles](#articles)
+    - [Metadata](#metadata)
+    - [Preview image mechanism](#preview-image-mechanism)
+    - [Article preview](#article-preview)
+  - [Documentation](#documentation)
+    - [Metadata](#metadata-1)
+    - [Preview images for documentation pages](#preview-images-for-documentation-pages)
+    - [Documentation sidebar](#documentation-sidebar)
+      - [Delimiter](#delimiter)
+      - [External link](#external-link)
+      - [Params](#params)
+  - [Blog](#blog)
+    - [Images](#images)
+    - [Important notes](#important-notes)
+  - [Shortcodes 🧩🧩🧩](#shortcodes-)
+    - [Built-in shortcodes](#built-in-shortcodes)
+    - [Custom shortcodes](#custom-shortcodes)
+      - [🧩 Card](#-card)
+      - [🧩 Grid Row](#-grid-row)
+      - [🧩 Banner](#-banner)
+      - [🧩 Code Snippets Widget](#-code-snippets-widget)
+        - [📁 Directory Structure](#-directory-structure)
+        - [▶️ Example Usage](#-example-usage)
+        - [⚙️ Parameters](#-parameters)
+        - [⚠️ Notes](#-notes)
+        - [🚫 Limitations](#-limitations)
+
+
+
 # Running locally
 
 ## Prerequisites
@@ -128,6 +169,12 @@ You can install `cwebp` with the following command:
 curl -s https://raw.githubusercontent.com/Intervox/node-webp/latest/bin/install_webp | sudo bash
 ```
 
+For **macOS**, you'll have to install `coreutils` too.
+
+```
+brew install coreutils
+```
+
 #### Prepare preview image
 
 For the preview use an image with an aspect ratio of 3 to 1 in JPG or PNG format. With a resolution not smaller than 1200x630px. The image should illustrate in some way the article's core idea. Fill free got creative. Check out that the most important part of the image is in the center.
@@ -147,6 +194,11 @@ bash -x automation/process-article-img.sh ~/Pictures/my_preview.jpg filtrable-hn
 ```
 
 This command will create a directory `preview` in `static/article_data/filtrable-hnsw` and generate preview images in it. If the directory `static/article_data/filtrable-hnsw` doesn't exist, it will be created. If it exists, only files in the children `preview` directory will be affected. In this case, preview images will be overwritten. Your original image will not be affected.
+
+For **macOS** you'll have to make 2 adjustements to `process-img.sh` script which is run by `process-article-img.sh` script:
+
+1. Exchange `stat -c %Y` with `stat -f %m`;
+2. Exchange `realpath` with `grealpath`.
 
 #### Preview images set
 
@@ -260,15 +312,157 @@ In the blog post file, you'll see:
 - If a post has `featured: true` property in the front matter this post will appear in the "Features and News" blog section. Only the last 4 featured posts will be displayed in this section. Featured posts will not appear in the regular post list.
   - If there are more than 4 `featured: true` posts (where `draft: false`), the oldest post disappears from /blog.
 
-## Marketing Landing Pages
+## Shortcodes 🧩🧩🧩
 
-### Build styles
+Hugo lets you use built-in and custom shortcodes to simplify the creation of content. Meanwhile, **keep in mind that shortcodes make the content less portable**. If you decide to move the content to another platform, you'll need to rewrite the shortcodes. **Avoid to overuse them.**
 
-From the root of the project:
+You can use shortcodes in markdown files by enclosing the shortcode in double curly braces. For example:
 
-```bash
-sass --watch --style=compressed ./qdrant-landing/themes/qdrant/static/css/pages/marketing-landing.scss ./qdrant-landing/themes/qdrant/static/css/marketing-landing.css
+```markdown
+{{< shortcode-name param1="value1" param2="value2" >}}
 ```
+
+### Built-in shortcodes
+
+List of built-in shortcodes can be found in the [Hugo documentation](https://gohugo.io/content-management/shortcodes/).
+
+If you use a shortcode in your markdown file, but it fails to render, check if the shortcode is available with the Hugo version the site is built with.
+
+### Custom shortcodes
+
+You can find the list of available shortcodes in the `qdrant-landing/themes/qdrant/layouts/shortcodes` directory.
+
+#### 🧩 Card
+- Card - variant 1
+
+  ![](readme-assets/shortcode-card-1.png)
+
+Example:
+```
+{{< card
+title="Qdrant Quickstart"  
+link="/documentation"  
+type="Info"  // optional
+icon="/icons/outline/documentation-blue.svg" 
+col="6" >}}
+  This guide will help you get started with Qdrant locally.  
+{{< /card >}}
+```
+
+- Card - variant 2
+
+  ![](readme-assets/shortcode-card-2.png)
+
+Example:
+```
+{{< card
+title="Qdrant Quickstart"  
+link="/documentation"  
+image="/img/brand-resources-hero.svg"  
+col="6" >}}
+  This guide will help you get started with Qdrant locally.  
+{{< /card >}}
+```
+
+Parameters for card shortcode:
+- `title` - required
+- `link` -required
+- `image` - optional, default null
+- `type` - optional, default "Document"
+- `icon` - optional, default is an icon of documents
+- `col` - optional, default 12
+
+Card variant 1 is the default; you can optionally change the icon and type, if you use `image` option, you will get variant 2, type and icon will be ignored even if given.
+
+<hr>
+
+#### 🧩 Grid Row
+
+Cards should be enclosed in a row shortcode if you want to have more than one card in a row.
+
+Example:
+```
+{{< grid-row >}}
+  {{< card
+    title="Title one"  
+    link="/some-link"  
+    image="some-image.svg"  
+    col="6" >}}
+      This is a first card.  
+  {{< /card >}}
+  {{< card  
+    title="Title two"  
+    link="/another-link"  
+    image="another-image.svg"  
+    col="6" >}}
+      This is a second card.
+  {{< /card >}}
+{{< /grid-row >}}
+```
+
+Each card will take up half of the row in the example above.
+
+<hr>
+
+#### 🧩 Banner
+
+![](readme-assets/shortcode-banner.png)
+
+Example:
+```
+{{< banner link="/documentation" >}}  
+  This guide will help you get started with Qdrant locally.  
+{{< /banner >}}
+```
+
+Parameters for banner shortcode:
+- `link` - required
+- `cta` - optional, default "Get Started"
+- `image` - optional, default "/img/rocket.svg"
+
+<hr>
+
+#### 🧩 Code Snippets Widget
+
+![](readme-assets/shortcode-snippets.png)
+
+This shortcode renders a code snippets widget from a specified path.
+Use it when you want to manage code examples as a collection of separate Markdown files.
+
+##### 📁 Directory Structure
+Place all code snippets for a single widget into one directory. Each file should be named after the programming language it represents:
+
+```
+points-id/
+├── http.md
+├── python.md
+├── go.md
+```
+File names are used for sorting. It's recommended to name files according to the language they contain (e.g., python.md, go.md). Sorting is controlled by the order parameter or the snippetsOrder parameter (see below).
+
+Each file should contain a code snippet in a fenced code block (```).
+
+##### ▶️ Example Usage
+``` hugo
+{{< code-snippet path="/documentation/headless/snippets/points-id/" order="python http go" >}}
+``` 
+
+##### ⚙️ Parameters
+- `path` (required) – Path to the directory (inside content/) containing the snippet files.
+- `order` (optional) – Space-separated list of snippet names to display first. Remaining files will be rendered in the order they appear in the directory. Sorting is based on file names (without .md).
+
+You can also define a global default snippet order using the snippetsOrder parameter in the relevant section’s _index.md.
+
+##### ⚠️ Notes
+**Important:** Turn off rendering for the snippets directory if it's not already disabled in its parent section. Otherwise, Hugo will attempt to generate standalone pages for these files.
+
+You can include multiple snippets in a single Markdown file, but in that case, the order parameter has no effect—they will render in the order they appear in the file.
+
+##### 🚫 Limitations
+Snippet files must not contain front matter (---). Each code snippet should be a fenced code block (```).
+
+The snippetsOrder parameter only works at the section level or deeper. If you're adding snippets to a section for the first time, make sure to define snippetsOrder in that section’s or a child section’s _index.md.
+
 
 ## SEO
 
@@ -314,3 +508,5 @@ If you want to add a new schema, create a new JSON file in the `qdrant-landing/a
 When use `seo_schema` and `seo_schema_json` together, `seo_schema` will be used additionally to `seo_schema_json` adding the second <script> tag with the `seo_schema` value.
 
 Use `seo_schema_json` if you want to reuse the same schema for multiple pages to avoid duplication and make it easier to maintain.
+
+[To Index](#index)

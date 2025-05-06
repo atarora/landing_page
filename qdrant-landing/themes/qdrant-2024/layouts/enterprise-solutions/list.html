@@ -4,16 +4,19 @@
 
   {{ partial "enterprise-solutions-use-cases" . }}
 
-  {{ with (.Site.GetPage "/enterprise-solutions/testimonial") }}
-    {{ partial "testimonial" (dict "context" . "overlayType" "top-and-bottom-overlay") }}
+  {{ with (.Site.GetPage "/customers/customers-testimonial-0") }}
+    {{ partial "testimonial-light" (dict "context" . "class" "customers-testimonial pt-1 pb-7") }}
   {{ end }}
 
-  {{ partial "enterprise-benefits" . }}
+  {{ partial "enterprise-solutions-capabilities" . }}
+
+  {{ partial "enterprise-solutions-challenges" . }}
+
+  {{ partial "enterprise-solutions-testimonials" . }}
 
   {{ with (.Site.GetPage "/headless/get-contacted-with-question-sales") }}
     {{ partial "get-contacted" (dict "context" . "class" "get-contacted-with-question") }}
   {{ end }}
 
   {{ partial "get-started" . }}
-  {{ partial "customer-list" . }}
 {{ end }}

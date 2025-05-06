@@ -1,10 +1,10 @@
 ---
 logIn:
   text: Log in
-  url: https://cloud.qdrant.io/
+  url: https://cloud.qdrant.io/login
 startFree:
   text: Get Started
-  url: https://cloud.qdrant.io/
+  url: https://cloud.qdrant.io/signup
 menuItems:
   - id: menu-0
     name: Products
@@ -69,19 +69,15 @@ menuItems:
         icon: community.svg
         url: /community/
       - id: subMenu-2-2
-        name: Qdrant Stars
-        icon: qdrant-stars.svg
-        url: /stars/
-      - id: subMenu-2-3
-        name: Github
+        name: GitHub
         icon: github.svg
         url: https://github.com/qdrant/qdrant
-      - id: subMenu-2-4
+      - id: subMenu-2-3
         name: Roadmap
         icon: roadmap.svg
         url: https://qdrant.to/roadmap
-      - id: subMenu-2-5
-        name: Changelog
+      - id: subMenu-2-4
+        name: Change Log
         icon: changelog.svg
         url: https://github.com/qdrant/qdrant/releases
   - id: menu-3
@@ -104,9 +100,17 @@ menuItems:
         icon: demos.svg
         url: /demo/
       - id: subMenu-3-4
+        name: Events
+        icon: partners.svg
+        url: https://try.qdrant.tech/events
+      - id: subMenu-3-5
         name: Startup Program
         icon: qdrant-for-startups.svg
         url: /qdrant-for-startups/
+      - id: subMenu-3-6
+        name: Bug Bounty Program
+        icon: bug-bounty-program.svg
+        url: /security/bug-bounty-program/
   - id: menu-4
     name: Company
     subMenuItems:
