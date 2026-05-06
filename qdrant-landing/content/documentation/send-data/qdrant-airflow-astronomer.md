@@ -1,11 +1,12 @@
 ---
-title: Semantic Querying with Airflow and Astronomer
-weight: 36
+title: Querying with Airflow
+weight: 10
+hideInSidebar: true
 aliases:
   - /documentation/examples/qdrant-airflow-astronomer/
 ---
 
-# Semantic Querying with Airflow and Astronomer
+# Qdrant Semantic Querying with Airflow and Astronomer
 
 | Time: 45 min | Level: Intermediate |     |     |
 | ------------ | ------------------- | --- | --- |

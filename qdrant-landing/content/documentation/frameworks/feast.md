@@ -30,7 +30,7 @@ online_store:
     port: 6333
     api_key: <your-own-key>
     vector_len: 384
-    # Reference: https://qdrant.tech/documentation/concepts/vectors/#named-vectors
+    # Reference: https://qdrant.tech/documentation/manage-data/vectors/#named-vectors
     # vector_name: text-vec
     write_batch_size: 100
 ```
@@ -59,4 +59,4 @@ feature_values = feature_store.retrieve_online_documents(
 ## 📚 Further Reading
 
 - [Feast Documentation](http://docs.feast.dev/)
-- [Source](https://github.com/feast-dev/feast/tree/master/sdk/python/feast/infra/online_stores/)
+- [Source](https://github.com/feast-dev/feast/tree/master/sdk/python/feast/infra/online_stores/qdrant_online_store)

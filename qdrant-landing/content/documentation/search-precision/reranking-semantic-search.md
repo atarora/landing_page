@@ -1,16 +1,17 @@
 ---
-title: Reranking in Semantic Search
+title: Reranking for Better Search
 weight: 1
-partition: build
+partition: ecosystem
+hideInSidebar: true
 aliases:
   - ../search-precision
 ---
 
-# Reranking in RAG with Qdrant Vector Database
+# Improve Semantic Search with Reranking using Qdrant
 
 In Retrieval-Augmented Generation (RAG) systems, irrelevant or missing information can throw off your model's ability to produce accurate, meaningful outputs. One of the best ways to ensure you're feeding your language model the most relevant, context-rich documents is through reranking. It’s a game-changer.
 
-In this guide, we’ll dive into using reranking to boost the relevance of search results in Qdrant. We’ll start with an easy use case that leverages the Cohere Rerank model. Then, we’ll take it up a notch by exploring ColBERT for a more advanced approach. By the time you’re done, you’ll know how to implement [hybrid search](https://qdrant.tech/articles/hybrid-search/), fine-tune reranking models, and significantly improve your accuracy.
+In this guide, we’ll dive into using reranking to boost the relevance of search results in Qdrant. We’ll start with an easy use case that leverages the Cohere Rerank model. Then, we’ll take it up a notch by exploring ColBERT for a more advanced approach. By the time you’re done, you’ll know how to implement [hybrid search](/articles/hybrid-search/), fine-tune reranking models, and significantly improve your accuracy.
 
 Ready? Let’s jump in.
 
@@ -158,7 +159,7 @@ co = cohere.Client("<API-KEY>")
 
 ### Creating a Collection
 
-A collection is basically a named group of points (vectors with data) that you can search through. All the vectors in a collection need to have the same size and be compared using one distance metric. Here’s how to create one::
+A collection is basically a named group of points (vectors with data) that you can search through. All the vectors in a collection need to have the same size and be compared using one distance metric. Here’s how to create one:
 
 ```jsx
 client.create_collection(

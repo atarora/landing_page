@@ -7,7 +7,7 @@ preview_image: /blog/case-study-pathwork/social_preview_pathwork.jpg
 social_preview_image: /blog/case-study-pathwork/social_preview_pathwork.jpg
 date: 2025-04-22T00:00:00Z
 author: "Daniel Azoulai"
-featured: true
+featured: false
 
 tags:
 - Pathwork
@@ -16,6 +16,7 @@ tags:
 - vector search
 - AI in insurance
 - case study
+partition: case-studies
 ---
 
 

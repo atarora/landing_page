@@ -1,6 +1,6 @@
 ---
 title: Cluster Access
-weight: 35
+weight: 15
 ---
 
 # Accessing Qdrant Cloud Clusters
@@ -9,7 +9,7 @@ Once you [created](/documentation/cloud/create-cluster/) a cluster, and set up a
 
 ## Cluster UI
 
-There is the convenient link on the cluster detail page in the Qdrant Cloud Console to access the [Cluster UI](/documentation/web-ui/).
+You can access your [Cluster UI](/documentation/web-ui/) via the Cluster Details page in the Qdrant Cloud Console. Authentication to a cluster is automatic if your cloud user has the [`read:cluster_data` or `write:cluster_data` permission](/documentation/cloud-rbac/permission-reference/). Without the correct permissions you will be prompted to enter an [API Key](/documentation/cloud/authentication/) to access the cluster.
 
 ![Cluster Cluster UI](/documentation/cloud/cloud-db-dashboard.png)
 
@@ -27,8 +27,12 @@ Have a look at the [API reference](/documentation/interfaces/#api-reference) and
 
 ## Node Specific Endpoints
 
-Next to the cluster endpoint which loadbalances requests across all healthy Qdrant nodes, each node in the cluster has its own endpoint as well. This is mainly usefull for monitoring or manual shard management purpuses.
+Next to the cluster endpoint which loadbalances requests across all healthy Qdrant nodes, each node in the cluster has its own endpoint as well. This is mainly useful for monitoring or manual shard management purposes.
 
-You can finde the node specific endpoints on the cluster detail page in the Qdrant Cloud Console.
+You can find the node specific endpoints on the cluster detail page in the Qdrant Cloud Console.
 
 ![Cluster node endpoints](/documentation/cloud/cloud-node-endpoints.png)
+
+## Restricting Cluster Access by IP Range
+
+You can restrict access to your cluster by specifying allowed IP ranges. This ensures that only clients connecting from the specified IP ranges can access the cluster. For more information, see [Client IP Restrictions](/documentation/cloud/configure-cluster/#client-ip-restrictions).

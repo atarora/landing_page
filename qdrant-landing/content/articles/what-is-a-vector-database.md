@@ -1,5 +1,5 @@
 ---
-title: "An Introduction to Vector Databases"
+title: "What is a Vector Database?"
 draft: false
 short_description:  What is a Vector Database? Use Cases & Examples | Qdrant
 description: Discover what a vector database is, its core functionalities, and real-world applications.
@@ -18,7 +18,7 @@ tags:
 category: vector-search-manuals
 ---
 
-## What Is a Vector Database?
+## An Introduction to Vector Databases
 
 ![vector-database-architecture](/articles_data/what-is-a-vector-database/vector-database-1.jpeg)
 
@@ -98,7 +98,7 @@ For that reason, when comparing two similar sentences, their embeddings will tur
 
 <img src="/articles_data/what-is-a-vector-database/two-similar-vectors.png" alt="Comparison of the embeddings of 2 similar sentences" width="500">
 
-That’s the beauty of embeddings. Tthe complexity of the data is distilled into something that can be compared across a multi-dimensional space.
+That’s the beauty of embeddings. The complexity of the data is distilled into something that can be compared across a multi-dimensional space.
 
 ### 3. The Payload: Adding Context with Metadata
 
@@ -112,7 +112,7 @@ For example, if you’re searching for a picture of a dog, the vector helps the 
 
 <img src="/articles_data/what-is-a-vector-database/filtering-example.png" alt="Filtering Example" width="500">
 
-The payload can help you narrow down those results by ignoring vectors that doesn't match your query vector filtering criteria. If you want the full picture of how filtering works in Qdrant, check out our [Complete Guide to Filtering.](https://qdrant.tech/articles/vector-search-filtering/)
+The payload can help you narrow down those results by ignoring vectors that don't match your query vector filtering criteria. If you want the full picture of how filtering works in Qdrant, check out our [Complete Guide to Filtering.](https://qdrant.tech/articles/vector-search-filtering/)
 
 ## The Architecture of a Vector Database
 
@@ -121,7 +121,7 @@ A vector database is made of multiple different entities and relations. Let's un
 
 ### Collections
 
-A [collection](https://qdrant.tech/documentation/concepts/collections/) is essentially a group of **vectors** (or “[points](https://qdrant.tech/documentation/concepts/points/)”) that are logically grouped together **based on similarity or a specific task**. Every vector within a collection shares the same dimensionality and can be compared using a single metric. Avoid creating multiple collections unless necessary; instead, consider techniques like **sharding** for scaling across nodes or **multitenancy** for handling different use cases within the same infrastructure.
+A [collection](https://qdrant.tech/documentation/manage-data/collections/) is essentially a group of **vectors** (or “[points](https://qdrant.tech/documentation/manage-data/points/)”) that are logically grouped together **based on similarity or a specific task**. Every vector within a collection shares the same dimensionality and can be compared using a single metric. Avoid creating multiple collections unless necessary; instead, consider techniques like **sharding** for scaling across nodes or **multitenancy** for handling different use cases within the same infrastructure.
 
 ### Distance Metrics 
 
@@ -154,7 +154,7 @@ client.create_collection(
 )
 ```
 
-For other configurations like `hnsw_config.on_disk` or `memmap_threshold`, see the Qdrant documentation for [Storage.](https://qdrant.tech/documentation/concepts/storage/)
+For other configurations like `hnsw_config.on_disk` or `memmap_threshold`, see the Qdrant documentation for [Storage.](https://qdrant.tech/documentation/manage-data/storage/)
 
 ### SDKs
 
@@ -184,9 +184,9 @@ In Qdrant, indexing is modular. You can configure indexes for **both vectors and
 
 <img src="/articles_data/what-is-a-vector-database/hnsw-search.png" alt="Searching Data with the HNSW algorithm" width="300">
 
-You need to build the payload index for **each field** you'd like to search. The magic here is in the combination: HNSW finds similar vectors, and the payload index makes sure only the ones that fit your criteria come through. Learn more about Qdrant's [Filtrable HNSW](https://qdrant.tech/articles/filtrable-hnsw/) and why it was built like this.
+You need to build the payload index for **each field** you'd like to search. The magic here is in the combination: HNSW finds similar vectors, and the payload index makes sure only the ones that fit your criteria come through. Learn more about Qdrant's [Filterable HNSW](https://qdrant.tech/articles/filterable-hnsw/) and why it was built like this.
 
-> Combining [full-text search](https://qdrant.tech/documentation/concepts/indexing/#full-text-index) with vector-based search gives you even more versatility. You can simultaneously search for conceptually similar documents while ensuring specific keywords are present, all within the same query.
+> Combining [full-text search](https://qdrant.tech/documentation/manage-data/indexing/#full-text-index) with vector-based search gives you even more versatility. You can simultaneously search for conceptually similar documents while ensuring specific keywords are present, all within the same query.
 
 ### 2. Searching: Approximate Nearest Neighbors (ANN) Search
 
@@ -290,7 +290,7 @@ Sparse vectors are ideal for tasks like **keyword search** or **metadata filteri
 
 Sometimes context alone isn’t enough. Sometimes you need precision, too. Dense vectors are fantastic when you need to retrieve results based on the context or meaning behind the data. Sparse vectors are useful when you also need **keyword or specific attribute matching**.
 
-> With hybrid search you don’t have to choose one over the othe and use both to get searches that are more **relevant** and **filtered**. 
+> With hybrid search you don’t have to choose one over the other and use both to get searches that are more **relevant** and **filtered**. 
 
 To achieve this balance, Qdrant uses **normalization** and **fusion** techniques to blend results from multiple search methods. One common approach is **Reciprocal Rank Fusion (RRF)**, where results from different methods are merged, giving higher importance to items ranked highly by both methods. This ensures that the best candidates, whether identified through dense or sparse vectors, appear at the top of the results.
 
@@ -324,9 +324,9 @@ This is just a simple example and there's so much more you can do with it. See o
 
 ![vector-database-architecture](/articles_data/what-is-a-vector-database/vector-database-2.jpeg)
 
-As your vector dataset grow larger, so do the computational demands of searching through it. 
+As your vector dataset grows larger, so do the computational demands of searching through it. 
 
-Quantized vectors are much smaller and easier to compare. With methods like [**Binary Quantization**](https://qdrant.tech/articles/binary-quantization/), you can see **search speeds improve by up to 40x while memory usage decreases by 32x**. Improvements that can be decicive when dealing with large datasets or needing low-latency results.
+Quantized vectors are much smaller and easier to compare. With methods like [**Binary Quantization**](https://qdrant.tech/articles/binary-quantization/), you can see **search speeds improve by up to 40x while memory usage decreases by 32x**. Improvements that can be decisive when dealing with large datasets or needing low-latency results.
 
 It works by converting high-dimensional vectors, which typically use `4 bytes` per dimension, into binary representations, using just `1 bit` per dimension. Values above zero become "1", and everything else becomes "0".
 
@@ -334,7 +334,7 @@ It works by converting high-dimensional vectors, which typically use `4 bytes` p
 
 Quantization reduces data precision, and yes, this does lead to some loss of accuracy.  However, for binary quantization, **OpenAI embeddings** achieves this performance improvement at a cost of only 5% of accuracy. If you apply techniques like **oversampling** and **rescoring**, this loss can be brought down even further.
 
-However, binary quantization isn’t the only available option. Techniques like [**Scalar Quantization**](https://qdrant.tech/documentation/guides/quantization/#scalar-quantization) and [**Product Quantization**](https://qdrant.tech/documentation/guides/quantization/#product-quantization) are also popular alternatives when optimizing vector compression.
+However, binary quantization isn’t the only available option. Techniques like [**Scalar Quantization**](https://qdrant.tech/documentation/manage-data/quantization/#scalar-quantization) and [**Product Quantization**](https://qdrant.tech/documentation/manage-data/quantization/#product-quantization) are also popular alternatives when optimizing vector compression.
 
 You can set up your chosen quantization method using the `quantization_config` parameter when creating a new collection:
 
@@ -414,7 +414,7 @@ client.create_collection(
 
 We recommend using sharding and replication together so that your data is both split across nodes and replicated for availability. 
 
-For more details on features like **user-defined sharding, node failure recovery**, and **consistency guarantees**, see our guide on [Distributed Deployment.](https://qdrant.tech/documentation/guides/distributed_deployment/)
+For more details on features like **user-defined sharding, node failure recovery**, and **consistency guarantees**, see our guide on [Distributed Deployment.](https://qdrant.tech/documentation/distributed_deployment/)
 
 ## Multitenancy: Data Isolation for Multi-Tenant Architectures
 
@@ -473,11 +473,11 @@ In more advanced setups, Qdrant uses **JWT (JSON Web Tokens)** to enforce **Role
 
 RBAC defines roles and assigns permissions, while JWT securely encodes these roles into tokens. Each request is validated against the user's JWT, ensuring they can only access or modify data based on their assigned permissions. 
 
-You can easily setup you access tokens and secure access to sensitive data through the **Qdrant Web UI:**
+You can easily setup your access tokens and secure access to sensitive data through the **Qdrant Web UI:**
 
 <img src="/articles_data/what-is-a-vector-database/jwt-web-ui.png" alt="Qdrant Web UI for generating a new access token." width="1000">
 
-By default, Qdrant instances are **unsecured**, so it's important to configure security measures before moving to production. To learn more about how to configure security for your Qdrant instance and other advanced options, please check out the [official Qdrant documentation on security.](https://qdrant.tech/documentation/guides/security/)
+By default, Qdrant instances are **unsecured**, so it's important to configure security measures before moving to production. To learn more about how to configure security for your Qdrant instance and other advanced options, please check out the [official Qdrant documentation on security.](https://qdrant.tech/documentation/security/)
 
 ## Time to Experiment
 

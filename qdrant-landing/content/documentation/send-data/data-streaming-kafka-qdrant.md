@@ -1,11 +1,12 @@
 ---
-title: How to Setup Seamless Data Streaming with Kafka and Qdrant
-weight: 49
+title: Kafka Streaming into Qdrant
+weight: 15
+hideInSidebar: true
 aliases:
   - /examples/data-streaming-kafka-qdrant/
 ---
 
-# Setup Data Streaming with Kafka via Confluent
+# Stream Real-Time Data into Qdrant with Kafka and Confluent
 
 **Author:** [M K Pavan Kumar](https://www.linkedin.com/in/kameshwara-pavan-kumar-mantha-91678b21/) , research scholar at [IIITDM, Kurnool](https://iiitk.ac.in). Specialist in hallucination mitigation techniques and RAG methodologies. 
 • [GitHub](https://github.com/pavanjava) • [Medium](https://medium.com/@manthapavankumar11)  
@@ -84,7 +85,7 @@ docker pull qdrant/qdrant
 docker run -p 6334:6334 -p 6333:6333 qdrant/qdrant
 ```
 
-This will download the Qdrant image and start a Qdrant instance accessible at `http://localhost:6333`. For more detailed instructions and alternative installation methods, refer to the [Qdrant installation documentation](https://qdrant.tech/documentation/quick-start/).
+This will download the Qdrant image and start a Qdrant instance accessible at `http://localhost:6333`. For more detailed instructions and alternative installation methods, refer to the [Qdrant installation documentation](https://qdrant.tech/documentation/quickstart/).
 
 ## Installation of Qdrant-Kafka Sink Connector:
 
@@ -197,8 +198,7 @@ from fastembed import TextEmbedding
 
 collection_name: str = 'test'
 embed_model_name: str = 'snowflake/snowflake-arctic-embed-s'
-```
-```python
+
 # Step 0: create qdrant_collection
 create_qdrant_collection(collection_name=collection_name, embed_model=embed_model_name)
 

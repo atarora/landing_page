@@ -1,16 +1,16 @@
 ---
-title: Langchain
+title: LangChain
 aliases:
   - ../integrations/langchain/
   - /documentation/overview/integrations/langchain/
 ---
 
-# Langchain
+# LangChain
 
-Langchain is a library that makes developing Large Language Model-based applications much easier. It unifies the interfaces
-to different libraries, including major embedding providers and Qdrant. Using Langchain, you can focus on the business value instead of writing the boilerplate.
+LangChain is a library that makes developing Large Language Model-based applications much easier. It unifies the interfaces
+to different libraries, including major embedding providers and Qdrant. Using LangChain, you can focus on the business value instead of writing the boilerplate.
 
-Langchain distributes the Qdrant integration as a partner package.
+LangChain distributes the Qdrant integration as a partner package.
 
 It might be installed with pip:
 
@@ -18,7 +18,7 @@ It might be installed with pip:
 pip install langchain-qdrant
 ```
 
-The integration supports searching for relevant documents usin dense/sparse and hybrid retrieval.
+The integration supports searching for relevant documents using dense/sparse and hybrid retrieval.
 
 Qdrant acts as a vector index that may store the embeddings with the documents used to generate them. There are various ways to use it, but calling `QdrantVectorStore.from_texts` or `QdrantVectorStore.from_documents` is probably the most straightforward way to get started:
 
@@ -81,7 +81,7 @@ qdrant = Qdrant.from_documents(
 
 ### On-premise server deployment
 
-No matter if you choose to launch QdrantVectorStore locally with [a Docker container](/documentation/guides/installation/), or
+No matter if you choose to launch QdrantVectorStore locally with [a Docker container](/documentation/installation/), or
 select a Kubernetes deployment with [the official Helm chart](https://github.com/qdrant/qdrant-helm), the way you're
 going to connect to such an instance will be identical. You'll need to provide a URL pointing to the service.
 
@@ -184,8 +184,8 @@ Note that if you've added documents with HYBRID mode, you can switch to any retr
 
 ## Next steps
 
-If you'd like to know more about running Qdrant in a Langchain-based application, please read our article
-[Question Answering with Langchain and Qdrant without boilerplate](/articles/langchain-integration/). Some more information
-might also be found in the [Langchain documentation](https://python.langchain.com/docs/integrations/vectorstores/qdrant).
+If you'd like to know more about running Qdrant in a LangChain-based application, please read our article
+[Question Answering with LangChain and Qdrant without boilerplate](/articles/langchain-integration/). Some more information
+might also be found in the [LangChain documentation](https://python.langchain.com/docs/integrations/vectorstores/qdrant).
 
 - [Source Code](https://github.com/langchain-ai/langchain/tree/master/libs%2Fpartners%2Fqdrant)

@@ -1,6 +1,6 @@
 ---
 title: Managing a Cluster
-weight: 3
+weight: 15
 ---
 
 # Managing a Qdrant Cluster
@@ -39,7 +39,7 @@ To scale a cluster, update the CPU, memory and storage resources in the QdrantCl
 
 To upgrade the Qdrant version of a database cluster, update the `version` field in the QdrantCluster spec. The Qdrant operator will automatically upgrade the cluster to the new version. The upgrade process is highly available on a multi-node cluster with replicated collections.
 
-Note, that you should not skip minor versions when upgrading. For example, if you are running version `v1.11.3`, you can upgrade to `v1.11.4` or `v1.12.2`, but not directly to `v1.13.0`.
+Note, that you should not skip minor versions when upgrading. For example, if you are running version `v1.11.3`, you can upgrade to `v1.11.5` or `v1.12.6`, but not directly to `v1.13.0`.
 
 ## Exposing a Cluster
 
@@ -73,7 +73,7 @@ Especially if you create a LoadBalancer Service, you may need to provide annotat
 
 Examples:
 
-* [AWS EKS LoadBalancer annotations](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/)
+* [AWS EKS LoadBalancer annotations](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/service/annotations/)
 * [Azure AKS Public LoadBalancer annotations](https://learn.microsoft.com/en-us/azure/aks/load-balancer-standard)
 * [Azure AKS Internal LoadBalancer annotations](https://learn.microsoft.com/en-us/azure/aks/internal-lb)
 * [GCP GKE LoadBalancer annotations](https://cloud.google.com/kubernetes-engine/docs/concepts/service-load-balancer-parameters)
@@ -137,7 +137,7 @@ spec:
       jwt_rbac: true
 ```
 
-If you set the `jwt_rbac` flag, you will also be able to create granular [JWT tokens for role based access control](/documentation/guides/security/#granular-access-control-with-jwt).
+If you set the `jwt_rbac` flag, you will also be able to create granular [JWT tokens for role based access control](/documentation/security/#granular-access-control-with-jwt).
 
 ### Configuring TLS for Database Access
 
@@ -291,7 +291,7 @@ step certificate create mydomain.com qdrant-nodes.crt qdrant-nodes.key \
 
 ## GPU support
 
-Starting with Qdrant 1.13 and private-cloud version 1.6.1 you can create a cluster that uses GPUs to accelarate indexing.
+Starting with Qdrant 1.13 and private-cloud version 1.6.1 you can create a cluster that uses GPUs to accelerate indexing.
 
 As a prerequisite, you need to have a Kubernetes cluster with GPU support. You can check the [Kubernetes documentation](https://kubernetes.io/docs/tasks/manage-gpus/scheduling-gpus/) for generic information on GPUs and Kubernetes, or the documentation of your specific Kubernetes distribution.
 
@@ -347,3 +347,63 @@ Access web UI at http://localhost:6333/dashboard
 ```
 
 For more GPU configuration options, see the [Qdrant Private Cloud API Reference](/documentation/private-cloud/api-reference/).
+
+## Ephemeral Snapshot Volumes
+
+If you do not [create snapshots](https://api.qdrant.tech/api-reference/snapshots/create-snapshot), or there is no need
+to keep them available after cluster restart, the snapshot storage classname can be set to `emptyDir`:
+
+```yaml
+apiVersion: qdrant.io/v1
+kind: QdrantCluster
+metadata:
+  name: qdrant-a7d8d973-0cc5-42de-8d7b-c29d14d24840
+  labels:
+    cluster-id: "a7d8d973-0cc5-42de-8d7b-c29d14d24840"
+    customer-id: "acme-industries"
+spec:
+  id: "a7d8d973-0cc5-42de-8d7b-c29d14d24840"
+  version: "v1.13.4"
+  size: 1
+  resources:
+    cpu: 2
+    memory: "8Gi"
+    storage: "40Gi"
+  storageClassNames:
+    snapshots: emptyDir
+```
+
+See [Kubernetes docs on emptyDir volumes](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) for more details,
+on how k8s node ephemeral storage is allocated and used.
+
+## Automatic Shard Rebalancing
+
+Qdrant Private Cloud supports automatic shard rebalancing. This means that when you scale up or down the number of nodes in a cluster, the operator will automatically redistribute the shards across the available nodes to ensure an even distribution of data.
+
+To enable automatic shard rebalancing, you can set the `rebalancestrategy` field in the QdrantCluster spec:
+
+```yaml
+apiVersion: qdrant.io/v1
+kind: QdrantCluster
+metadata:
+  name: qdrant-a7d8d973-0cc5-42de-8d7b-c29d14d24840
+  labels:
+    cluster-id: "a7d8d973-0cc5-42de-8d7b-c29d14d24840"
+    customer-id: "acme-industries"
+spec:
+  id: "a7d8d973-0cc5-42de-8d7b-c29d14d24840"
+  version: "v1.15.1"
+  size: 3
+  rebalanceStrategy: by_count_and_size
+  resources:
+    cpu: 2
+    memory: "8Gi"
+    storage: "40Gi"
+```
+
+For a list of all available rebalancing strategies, see the [Qdrant Private Cloud API Reference](/documentation/private-cloud/api-reference/#rebalancestrategy).
+
+## Resharding
+
+In Qdrant Cloud, you can change the number of shards in your existing collections without having to recreate the collection from scratch. This feature is called resharding and allows you to scale your collections up or down as needed. For more details see [Resharding](/documentation/cloud/cluster-scaling/#resharding).
+

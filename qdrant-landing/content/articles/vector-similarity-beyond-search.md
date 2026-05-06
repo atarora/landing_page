@@ -82,7 +82,7 @@ To ensure our catalog is accurate, we can use a dissimilarity search to highligh
 
 To do this, we only need to search for the most dissimilar items using the 
 embedding of the category title itself as a query.
-This can be too broad, so, by combining it with filters —a [Qdrant superpower](/articles/filtrable-hnsw/)—, we can narrow down the search to a specific category.
+This can be too broad, so, by combining it with filters —a [Qdrant superpower](/articles/filterable-hnsw/)—, we can narrow down the search to a specific category.
 
 
 {{< figure src=/articles_data/vector-similarity-beyond-search/mislabelling.png caption="Mislabeling Detection" >}}
@@ -169,7 +169,7 @@ In this loss, the model is trained by fitting the information of relative simila
 Using the same mechanics, we can look at the training process from the other side.
 Given a trained model, the user can provide positive and negative examples, and the goal of the discovery process is then to find suitable anchors across the stored collection of vectors.
 
-<!-- ToDo: image where we know positive and nagative -->
+<!-- ToDo: image where we know positive and negative -->
 {{< figure width=60% src=/articles_data/vector-similarity-beyond-search/discovery.png caption="Reversed triplet loss" >}}
 
 Multiple positive-negative pairs can be provided to make the discovery process more accurate.

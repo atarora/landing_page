@@ -1,6 +1,6 @@
 ---
 title: Working with ColBERT 
-weight: 6
+weight: 60
 ---
 
 # How to Generate ColBERT Multivectors with FastEmbed
@@ -14,13 +14,13 @@ which represent an entire input with a single vector. By producing more granular
 ColBERT becomes a strong retriever. However, this advantage comes at the cost of increased resource consumption compared to 
 traditional dense embedding models, both in terms of speed and memory.
 
-Despite ColBERT being a powerful retriever, it's speed limitation might make it less suitable for large-scale retrieval.
+Despite ColBERT being a powerful retriever, its speed limitation might make it less suitable for large-scale retrieval.
 Therefore, we generally recommend using ColBERT for reranking a small set of already retrieved examples, rather than for first-stage retrieval. 
 A simple dense retriever can initially retrieve around 100-500 candidates, which can then be reranked with ColBERT to bring the most relevant results 
 to the top.
 
 ColBERT is a considerable alternative of a reranking model to [cross-encoders](https://sbert.net/examples/applications/cross-encoder/README.html), since
-It tends to be faster on inference time due to its `late interaction` mechanism.
+it tends to be faster on inference time due to its `late interaction` mechanism.
 
 How does `late interaction` work? Cross-encoders ingest a query and a document glued together as one input. 
 A cross-encoder model divides this input into meaningful (for the model) parts and checks how these parts relate. 
@@ -30,10 +30,10 @@ All interactions between these parts are expected to be done "later" outside the
 
 ## Using ColBERT in Qdrant
 
-Qdrant supports [multivector representations](https://qdrant.tech/documentation/concepts/vectors/#multivectors) out of the box so that you can use any late interaction model as `ColBERT` or `ColPali` in Qdrant without any additional pre/post-processing.
+Qdrant supports [multivector representations](/documentation/manage-data/vectors/#multivectors) out of the box so that you can use any late interaction model as `ColBERT` or `ColPali` in Qdrant without any additional pre/post-processing.
 
 This tutorial uses ColBERT as a first-stage retriever on a toy dataset.
-You can see how to use ColBERT as a reranker in our [multi-stage queries documentation](https://qdrant.tech/documentation/concepts/hybrid-queries/#multi-stage-queries).
+You can see how to use ColBERT as a reranker in our [multi-stage queries documentation](/documentation/search/hybrid-queries/#multi-stage-queries).
 ## Setup
 
 Install `fastembed`.
@@ -81,7 +81,7 @@ The model files will be fetched and downloaded, with progress showing.
 We will vectorize a toy movie description dataset with ColBERT:
 
 <details>
-<summary> <span style="background-color: gray; color: black;"> Movie description dataset </span> </summary>
+<summary> Movie description dataset </summary>
 
 ```python
 descriptions = ["In 1431, Jeanne d'Arc is placed on trial on charges of heresy. The ecclesiastical jurists attempt to force Jeanne to recant her claims of holy visions.",
@@ -144,8 +144,8 @@ from qdrant_client import QdrantClient, models
 qdrant_client = QdrantClient(":memory:") # Qdrant is running from RAM.
 ```
 
-Now, let's create a small [collection](https://qdrant.tech/documentation/concepts/collections/) with our movie data.
-For that, we will use the [multivectors](https://qdrant.tech/documentation/concepts/vectors/#multivectors) functionality supported in Qdrant.
+Now, let's create a small [collection](/documentation/manage-data/collections/) with our movie data.
+For that, we will use the [multivectors](/documentation/manage-data/vectors/#multivectors) functionality supported in Qdrant.
 To configure multivector collection, we need to specify:
 - similarity metric between vectors;
 - the size of each vector (for ColBERT, it's **128**);
@@ -166,7 +166,7 @@ qdrant_client.create_collection(
 To make this collection human-readable, let's save movie metadata (name, description in text form and movie's length) together with an embedded description.
 
 <details>
-<summary> <span style="background-color: gray; color: black;"> Movie metadata </span> </summary>
+<summary> Movie metadata </summary>
 
 ```python
 metadata = [{"movie_name": "The Passion of Joan of Arc", "movie_watch_time_min": 114, "movie_description": "In 1431, Jeanne d'Arc is placed on trial on charges of heresy. The ecclesiastical jurists attempt to force Jeanne to recant her claims of holy visions."},

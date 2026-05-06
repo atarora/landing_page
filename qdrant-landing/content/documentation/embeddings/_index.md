@@ -1,7 +1,7 @@
 ---
 title: Embeddings
-weight: 19
-partition: build
+weight: 700
+partition: ecosystem
 ---
 
 # Supported Embedding Providers & Models
@@ -21,7 +21,7 @@ Additionally, [any open-source embeddings from HuggingFace](https://huggingface.
 | [Aleph Alpha](/documentation/embeddings/aleph-alpha/) | Multilingual embeddings focused on European languages.           |
 | [Bedrock](/documentation/embeddings/bedrock/)         | AWS managed service for foundation models and embeddings.        |
 | [Cohere](/documentation/embeddings/cohere/)           | Language model embeddings for NLP tasks.                         |
-| [Gemini](/documentation/embeddings/gemini/)           | Google’s multimodal embeddings for text and vision.              |
+| [Gemini](/documentation/embeddings/gemini/)           | Google Gemini embeddings for semantic search, classification.    |
 | [Jina AI](/documentation/embeddings/jina-embeddings/) | Customizable embeddings for neural search.                       |
 | [Mistral](/documentation/embeddings/mistral/)         | Open-source, efficient language model embeddings.                |
 | [MixedBread](/documentation/embeddings/mixedbread/)   | Lightweight embeddings for constrained environments.             |
@@ -33,5 +33,6 @@ Additionally, [any open-source embeddings from HuggingFace](https://huggingface.
 | [Prem AI](/documentation/embeddings/premai/)          | Precise language embeddings.                                     |
 | [Twelve Labs](/documentation/embeddings/twelvelabs/)  | Multimodal embeddings from Twelve labs.                          |
 | [Snowflake](/documentation/embeddings/snowflake/)     | Scalable embeddings for big data.                                |
+| [Superlinked](/documentation/embeddings/superlinked/) | Self-hosted inference engine serving 85+ dense, sparse, and multivector (ColBERT) embedding models from a single endpoint. |
 | [Upstage](/documentation/embeddings/upstage/)         | Embeddings for speech and language tasks.                        |
 | [Voyage AI](/documentation/embeddings/voyage/)        | Navigation and spatial understanding embeddings.                 |

@@ -24,7 +24,7 @@
         {{ with (.Site.GetPage "/headless/menu") }}
           <div class="menu-mobile">
             <div class="menu-mobile__header">
-              {{ partial "logo.html" . }}
+              {{ partial "logo-dark.html" . }}
               <button type="button" class="menu-mobile__close">{{ partial "svg" "close.svg" }}</button>
             </div>
 
@@ -51,18 +51,14 @@
       <footer class="footer">
         <div class="footer__top container">
           <a href="/" title="Go to Home Page">
-            <img class="footer__logo mb-0" src="/img/logo-white.png" alt="Qdrant Logo" />
+            <img class="footer__top-logo" src="/img/logo-white.png" alt="Qdrant Logo" />
           </a>
         </div>
 
         <div class="footer__bottom container">
           <div class="footer__bottom-content">
-            <span>{{ .Params.copyright }}</span>
-            <div class="footer__bottom-links">
-              <a href="{{ .Params.termsLink.url }}">{{ .Params.termsLink.text }}</a>
-              <a href="{{ .Params.privacyLink.url }}">{{ .Params.privacyLink.text }}</a>
-              <a href="{{ .Params.impressumLink.url }}">{{ .Params.impressumLink.text }}</a>
-            </div>
+            <span>&copy; {{ time.Now.Year }} {{ .Params.copyright }}</span>
+            {{ partial "footer-bottom-links.html" (dict "footer" .) }}
           </div>
         </div>
       </footer>

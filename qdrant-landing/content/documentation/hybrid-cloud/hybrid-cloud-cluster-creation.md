@@ -1,18 +1,21 @@
 ---
 title: Create a Cluster
-weight: 2
+weight: 10
 ---
 
 # Creating a Qdrant Cluster in Hybrid Cloud
 
-Once you have created a Hybrid Cloud Environment, you can create a Qdrant cluster in that enviroment. Use the same process to [Create a cluster](/documentation/cloud/create-cluster/). Make sure to select your Hybrid Cloud Environment as the target.
+Once a Hybrid Cloud Environment has been created you can follow the normal process to [create a Qdrant cluster](/documentation/cloud/create-cluster/) in that environment. This page also contains additional information on how to create a [production-ready cluster](/documentation/cloud/create-cluster/#creating-a-production-ready-cluster).
+
+Make sure to select your Hybrid Cloud Environment as the target.
 
 ![Create Hybrid Cloud Cluster](/documentation/cloud/hybrid_cloud_create_cluster.png)
 
 Note that in the "Kubernetes Configuration" section you can additionally configure:
 
-* Node selectors for the Qdrant database pods
+* NodeSelectors for the Qdrant database pods
 * Toleration for the Qdrant database pods
+* TopologySpreadConstraints for the Qdrant database pods
 * Additional labels for the Qdrant database pods
 * A service type and annotations for the Qdrant database service
 
@@ -22,11 +25,11 @@ These settings can also be changed after the cluster is created on the cluster d
 
 ### Scheduling Configuration
 
-When creating or editing a cluster, you can configure how the database Pods get scheduled in your Kubernetes cluster. This can be useful to ensure that the Qdrant databases will run on dedicated nodes. You can configure the necessary node selectors and tolerations in the "Kubernetes Configuration" section during cluster creation, or on the cluster detail page.
+When creating or editing a cluster, you can configure Pod to node scheduling for your Kubernetes cluster. This can be useful to ensure that the Qdrant databases will run on dedicated nodes. You can configure the necessary nodeSelectors and tolerations and topologySpreadConstraints in the "Kubernetes Configuration" section during cluster creation, or on the cluster detail page. For more information see [Scheduling Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
 
 ### Authentication to your Qdrant Clusters
 
-<aside role="alert">By default, clusters in Hybrid Cloud are only exposed through a Kubernetes ClusterIP Service inside of the Kubernetes network and not accessible to the outside, and no API key is configured. If you choose to expose the database internally or externally, you must configure an API key.</aside>
+<aside role="alert">By default, clusters in Hybrid Cloud are only exposed through a Kubernetes ClusterIP Service inside the Kubernetes network and not accessible to the outside, and no API key is configured. If you choose to expose the database internally or externally, you must configure an API key.</aside>
 
 In Hybrid Cloud the authentication information is provided by Kubernetes secrets.
 
@@ -61,6 +64,8 @@ If you want to retrieve the secret again, you can also use `kubectl`:
 kubectl get secret qdrant-api-key -o jsonpath="{.data.api-key}" --namespace the-qdrant-namespace | base64 --decode
 ```
 
+After configuring the API key secret, you can create JWTs with granular access control in the Qdrant Cluster UI. Please refer to the [Granular access control with JWT](/documentation/security/#granular-access-control-with-jwt) documentation for more details.
+
 #### Watch the Video
 
 In this tutorial, we walk you through the steps to expose your Qdrant database cluster running on Qdrant Hybrid Cloud to external applications or users outside your Kubernetes cluster. Learn how to configure TLS certificates for secure communication, set up authentication, and explore different methods like load balancers, ingress, and port configurations. 
@@ -81,7 +86,7 @@ This endpoint is also visible on the cluster detail page.
 
 If you want to access the database from your local developer machine, you can use `kubectl port-forward` to forward the service port to your local machine:
 
-```
+```shell
 kubectl --namespace your-qdrant-namespace port-forward service/qdrant-9a9f48c7-bb90-4fb2-816f-418a46a74b24 6333:6333
 ```
 
@@ -95,7 +100,7 @@ Especially if you create a LoadBalancer Service, you may need to provide annotat
 
 Examples:
 
-* [AWS EKS LoadBalancer annotations](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/)
+* [AWS EKS LoadBalancer annotations](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/service/annotations/)
 * [Azure AKS Public LoadBalancer annotations](https://learn.microsoft.com/en-us/azure/aks/load-balancer-standard)
 * [Azure AKS Internal LoadBalancer annotations](https://learn.microsoft.com/en-us/azure/aks/internal-lb)
 * [GCP GKE LoadBalancer annotations](https://cloud.google.com/kubernetes-engine/docs/concepts/service-load-balancer-parameters)
@@ -191,7 +196,7 @@ By default, Qdrant Cloud will reserve 20% of available CPU and memory on each Po
 
 You can modify this reservation in the “Configuration” section of the Qdrant Cluster detail page.
 
-If you want to check how much resources are availabe on an empty Kubernetes node, you can use the following command:
+If you want to check how much resources are available on an empty Kubernetes node, you can use the following command:
 
 ```shell
 kubectl describe node <node-name>

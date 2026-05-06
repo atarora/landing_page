@@ -1,6 +1,6 @@
 ---
 title: User Management
-weight: 2
+weight: 10
 ---
 
 # User Management
@@ -9,9 +9,16 @@ weight: 2
 
 ## Inviting Users to an Account
 
-Users can be invited via the **User Management** section, where they are assigned the **Base role** by default. Additionally, users have the option to select a specific role when inviting another user. The **Base role** is a predefined role with minimal permissions, granting users access to the platform while restricting them to viewing only their own profile.
+
+
+Account users can be managed via the **User Management** section. Start by selecting a role from the dropdown and then type the name of the user you wish to manage. For users who are not in your account you will have the option to invite them. For users already in your account you can add them to the role, or see if the role has already been assigned to them.
 
 ![image.png](/documentation/cloud/role-based-access-control/user-invitation.png)
+![image.png](/documentation/cloud/role-based-access-control/user-addition.png)
+
+### Accepting an Invitation
+
+After inviting a user, they will receive an email prompting them to join the account. After clicking the link in the email, they are directed to the Qdrant Cloud portal, where a banner at the top of the page enables them to accept or decline the invitation.
 
 ### Inviting Users from a Role
 
@@ -34,6 +41,12 @@ Authorized users can give or take away roles from users in **User Management**.
 ![image.png](/documentation/cloud/role-based-access-control/update-user-role.png)
 
 ![image.png](/documentation/cloud/role-based-access-control/update-user-role-edit-dialog.png)
+
+## Making a User the Owner of an Account
+
+Only account owners are allowed to transfer ownership of an account, this can be done via the **User Management** page. There can only be one account owner per account.
+
+![image.png](/documentation/cloud/role-based-access-control/make-account-owner.png)
 
 ## Removing a User from an Account
 

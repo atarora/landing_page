@@ -1,6 +1,6 @@
 ---
 title: Monitor Clusters
-weight: 55
+weight: 30
 ---
 
 # Monitoring Qdrant Cloud Clusters
@@ -9,17 +9,282 @@ weight: 55
 
 ![Cluster Metrics](/documentation/cloud/cluster-metrics.png)
 
-Qdrant Cloud provides you with a set of metrics to monitor the health of your database cluster. You can access these metrics in the Qdrant Cloud Console in the **Metrics** and **Request** sections of the cluster details page.
+Qdrant Cloud provides you with a set of metrics to monitor the health of your database cluster. You can access these metrics in the Qdrant Cloud Console in the **Metrics** and **Request** sections of the Cluster Details page.
 
 ## Logs
 
 ![Cluster Logs](/documentation/cloud/cluster-logs.png)
 
-Logs of the database cluster are available in the Qdrant Cloud Console in the **Logs** section of the cluster details page.
+Logs of the database cluster are available in the Qdrant Cloud Console in the **Logs** section of the Cluster Details page.
 
 ## Alerts
 
-You will receive automatic alerts via email before your cluster reaches the currently configured memory or storage limits, including recommendations for scaling your cluster.
+The account owner will receive automatic alerts via email if your cluster has any of the following issues:
+
+{{< accordion >}}
+- title: Memory Overutilized
+  content: |
+    **Why am I getting this alert?**
+    
+    Your cluster is using more than 80% of its memory allocation for over 5 minutes.
+    
+    **What does this mean for me?**
+    
+    If your usage continues to grow beyond the allocation then your cluster will fail due to resource pressure, and you will see disruption.
+    
+    **What can I do to resolve this?**
+    
+    You have the option to scale vertically to increase existing node capacity, or horizontally to spread the load more evenly, increase capacity, and reduce overall pressure.
+    
+    Alternatively, you can delete data from your cluster to reduce the amount of resources required.
+    
+    **Where can I learn more about this alert?**
+    
+    You can learn about high-availability and production readiness [here](/documentation/cloud/create-cluster/?q=high#creating-a-production-ready-cluster).
+    
+    You can learn about vertical scaling [here](/documentation/cloud/cluster-scaling/#vertical-scaling).
+    
+    You can learn about horizontal scaling [here](/documentation/cloud/cluster-scaling/#horizontal-scaling).
+
+- title: Disk Space Overutilized
+  content: |
+    **Why am I getting this alert?**
+    
+    Your cluster is using more than 80% of its disk space allocation for over 5 minutes.
+    
+    **What does this mean for me?**
+    
+    If your usage continues to grow beyond the allocation then your cluster will fail due to resource pressure, and you will see disruption.
+    
+    **What can I do to resolve this?**
+    
+    You have the option to scale vertically to increase existing node capacity, or horizontally to spread the load more evenly, increase capacity, and reduce overall pressure.
+    
+    Alternatively, you can delete data from your cluster to reduce the amount of resources required.
+    
+    **Where can I learn more about this alert?**
+    
+    You can learn about high-availability and production readiness [here](/documentation/cloud/create-cluster/?q=high#creating-a-production-ready-cluster).
+    
+    You can learn about vertical scaling [here](/documentation/cloud/cluster-scaling/#vertical-scaling).
+    
+    You can learn about horizontal scaling [here](/documentation/cloud/cluster-scaling/#horizontal-scaling).
+
+- title: A Node Ran Out of Memory
+  content: |
+    **Why am I getting this alert?**
+    
+    Nodes in your cluster ran out of RAM.
+    
+    **What does this mean for me?**
+    
+    One or more Qdrant nodes tried to allocate more RAM than available while storing data or serving requests, which resulted in the operating system stopping the Qdrant process.
+    
+    If your cluster is highly available you may avoid total downtime but the situation is still unstable. Without high availability you should expect disruption until your cluster has been scaled up. 
+    
+    **What can I do to resolve this?**
+    
+    Ensuring your cluster is highly available will mitigate the worst case scenario, but there is still significant operational risk if untreated.
+    
+    You have the option to scale vertically to increase existing node capacity, or horizontally to spread the load more evenly and reduce overall pressure.
+    
+    Alternatively, you can delete data from your cluster to reduce the amount of RAM required.
+    
+    **Where can I learn more about this alert?**
+    
+    You can learn about high-availability and production readiness [here](/documentation/cloud/create-cluster/?q=high#creating-a-production-ready-cluster).
+    
+    You can learn about vertical scaling [here](/documentation/cloud/cluster-scaling/#vertical-scaling).
+    
+    You can learn about horizontal scaling [here](/documentation/cloud/cluster-scaling/#horizontal-scaling).
+
+- title: A Node Ran Out of Disk Space
+  content: |
+    **Why am I getting this alert?**
+    
+    One or more nodes in the cluster have run out of disk.
+    
+    **What does this mean for me?**
+    
+    Nodes that run out of disk will be unable to store new vectors.
+    
+    This can lead to disruption if not resolved.
+    
+    **What can I do to resolve this?**
+    
+    Scaling vertically to increase disk space on existing nodes.
+    
+    Scaling horizontally by adding new nodes so that shards are spread out more. Re-sharding  may be necessary if there are not enough shards to distribute to new nodes.
+    
+    Alternatively, you can delete data from your cluster to reduce the amount of disk required.
+    
+    **Where can I learn more about this alert?**
+    
+    You can learn more about disk capacity [here](/documentation/capacity-planning/#scaling-disk-space-in-qdrant-cloud).
+    
+    You can learn about vertical scaling [here](/documentation/cloud/cluster-scaling/#vertical-scaling).
+    
+    You can learn about horizontal scaling [here](/documentation/cloud/cluster-scaling/#horizontal-scaling).
+    
+    You can learn about re-sharding [here](/documentation/cloud/cluster-scaling/#resharding).
+
+- title: Cluster Has Too Many Collections
+  content: |
+    **Why am I getting this alert?**
+    
+    Your cluster has >500 collections, suggesting an anti-pattern for Qdrant.
+    
+    **What does this mean for me?**
+    
+    A large amount of collections brings significant resource overhead. If not addressed this will degrade resilience and even cause outages in the long term.
+    
+    **What can I do to resolve this?**
+    
+    A single collection with payload index partitioning is usually optimal compared to many small individual tenant collections.*
+    
+    It is also possible to split collections across clusters, the [Qdrant Migration CLI](/documentation/tutorials-operations/migration/) can help you with this.
+    
+    **Where can I learn more about this alert?**
+    
+    You can learn more about how to set up multi-tenancy with a Qdrant collection [here](/documentation/manage-data/multitenancy/).
+
+- title: Cluster is Unhealthy
+  content: |
+    **Why am I getting this alert?**
+    
+    Your cluster’s nodes have been marked as unhealthy for over 5 minutes.
+    
+    **What does this mean for me?**
+    
+    One or more nodes in your Qdrant Cluster has been unhealthy for longer than 5 mins indicating there is a serious issue that needs attention.
+    
+    **What can I do to resolve this?**
+    
+    There are many reasons for a cluster’s workloads to become unhealthy. We send proactive alerts for common scenarios and recommend checking for other alerts. It is also important to validate any available monitoring statistics for both Qdrant and your application.
+    
+    We recommend checking any recent changes to client code, or configuration in your environment, looking for increases in search or write requests, to ensure no recent changes are the cause.
+
+- title: Cluster Version is Not Covered by SLA
+  content: |
+    **Why am I getting this alert?**
+    
+    Qdrant Cloud only supports the latest and previous 3 minor versions of Qdrant.
+    
+    **What does this mean for me?**
+    
+    Support requests against your cluster will not be covered by the SLA.
+    
+    **What can I do to resolve this?**
+    
+    You can upgrade your cluster version by visiting the cluster details page.
+    
+    **Where can I learn more about this alert?**
+    
+    Learn more about updating your cluster [here](/documentation/cloud/cluster-upgrades/)
+    
+    Learn more about the Qdrant SLA and version policy [here](https://cloud.qdrant.io/sla#3-supported-versions)
+
+- title: Database API Key is About to Expire
+  content: |
+    **Why am I getting this alert?**
+    
+    A Database Key is expiring soon.
+    
+    **What does this mean for me?**
+    
+    Requests using an expired key won’t be successful, which could lead to failed queries and application failures.
+    
+    **What can I do to resolve this?**
+    
+    If you are still using the key, you can create a new Database API Key and update your application to use the new one.
+    
+    **Where can I learn more about this alert?**
+    
+    Learn about the SDKs [here](/documentation/interfaces/).
+    
+    Learn more about JWT Keys and permissions [here](/documentation/security/?q=jwt#granular-access-control-with-jwt).
+
+- title: A Node is CPU Throttled
+  content: |
+    **Why am I getting this alert?**
+    
+    One or more cluster workloads have been CPU throttled for over 5 mins.
+    
+    **What does this mean for me?**
+    
+    CPU usage is constantly saturated which forces the operating system to throttle your Qdrant database nodes. This means that Qdrant will respond much slower to searches and writes.
+    
+    The reason for this is usually a high write load which overloads the cluster when creating or updating indexes. A very high search load with inefficient or complex queries can contribute.
+    
+    **What can I do to resolve this?**
+    
+    You can reduce the amount of writes to your database. e.g. by performing the writes in batches during times when you have less search traffic, or performing less writes in parallel.
+    
+    Indexing data properly will optimize query results and improve search performance reducing potential load.
+    
+    While hybrid and multi-stage queries are CPU intensive techniques, they can be used to optimize and reduce the quantity of inefficient operations. On the other hand if you are using these techniques too much, you may consider simplifying some operations to be less intensive.
+    
+    You can re-configure Qdrant Optimizers to reduce the load on the cluster.
+    
+    It is also possible to scale your cluster horizontally or vertically for higher CPU capacity.
+    
+    **Where can I learn more about this alert?**
+    
+    Learn how to optimize Qdrant for performance and configure indexing [here](/documentation/manage-data/indexing/) and [here](/documentation/ops-optimization/optimize/).
+    
+    Learn about optimizers [here](/documentation/ops-optimization/optimizer/).
+    
+    Learn more about hybrid search [here](/documentation/search/hybrid-queries/).
+
+- title: Node CPU Usage is Not Distributed Equally
+  content: |
+    **Why am I getting this alert?**
+    
+    CPU usage is not consistent across nodes in your cluster.
+    
+    **What does this mean for me?**
+    
+    Hotspotting, where a subset of nodes handle more load than the rest, causes slow search performance and potentially node failures.*
+    
+    For uneven CPU usage it typically means data distribution  across nodes is uneven.
+    
+    **What can I do to resolve this?**
+    
+    Resharding and shard rebalancing are the primary techniques for ensuring data is evenly distributed and that requests are not concentrated on a single node.
+    
+    **Where can I learn more about this alert?**
+    
+    Learn more about cloud rebalancing [here](/documentation/cloud/configure-cluster/#shard-rebalancing).
+
+- title: Node RAM or Disk Space Usage is Not Distributed Equally
+  content: |
+    **Why am I getting this alert?**
+    
+    RAM/Storage usage is not consistent across nodes in your cluster.
+    
+    **What does this mean for me?**
+    
+    Hotspotting, where a subset of nodes handle more load than the rest, causes slow search performance and potentially node failures.*
+    
+    For RAM/Storage usage it typically means data distribution across nodes is uneven.
+    
+    **What can I do to resolve this?**
+    
+    Resharding and rebalancing shards are both tactics to redistribute the load across your cluster evenly.
+    
+    Resharding allows you to scale the number of shards in a collection up or down without recreating the collection.
+    
+    This would help when your node count has been scaled up so you can reshard a collection to split it more evenly with a rebalance.
+    
+    Rebalancing is the process of redistributing shards across nodes which is useful if you add a new node and need to fill the capacity. In Qdrant Cloud, rebalancing happens automatically when a cluster is scaled horizontally.
+    
+    **Where can I learn more about this alert?**
+    
+    Learn more about distributed deployments and resharding [here](/documentation/distributed_deployment/#resharding).
+    
+    Learn more about cloud rebalancing [here](/documentation/cloud/configure-cluster/#shard-rebalancing).
+
+{{< /accordion >}}
 
 ## Qdrant Database Metrics and Telemetry
 
@@ -29,27 +294,27 @@ To scrape metrics from a Qdrant cluster running in Qdrant Cloud, an [API key](/d
 
 ### Qdrant Node Metrics
 
-Metrics in a Prometheus compatible format are available at the `/metrics` endpoint of each Qdrant database node. When scraping, you should use the [node specific URLs](/documentation/cloud/cluster-access/#node-specific-endpoints) to ensure that you are scraping metrics from all nodes in each cluster. For more information see [Qdrant monitoring](/documentation/guides/monitoring/).
+Metrics in a Prometheus-compatible format are available at the `/metrics` endpoint of each Qdrant database node. When scraping, you should use the [node specific URLs](/documentation/cloud/cluster-access/#node-specific-endpoints) to ensure that you are scraping metrics from all nodes in each cluster. For more information, see [Qdrant monitoring](/documentation/ops-monitoring/monitoring/).
 
 You can also access the `/telemetry` [endpoint](https://api.qdrant.tech/api-reference/service/telemetry) of your database. This endpoint is available on the cluster endpoint and provides information about the current state of the database, including the number of vectors, shards, and other useful information.
 
-For more information, see [Qdrant monitoring](/documentation/guides/monitoring/).
+For more information, see [Qdrant monitoring](/documentation/ops-monitoring/monitoring/).
 
 ### Cluster System Metrics
 
 Cluster system metrics is a cloud-only endpoint that not only shares all the information about the database from `/metrics` but also provides additional operational data from our infrastructure about your cluster, including information from our load balancers, ingresses, and cluster workloads themselves.
 
-Metrics in a Prometheus-compatible format are available at the `/sys_metrics` cluster endpoint. Database API Keys are used to authenticate access to cluster system metrics. `/sys_metrics` only need to be queried once per cluster on the main load-balanced cluster endpoint. You don't need to scrape each cluster node individually, instead it will always provide metrics about all nodes.
+Metrics in a Prometheus-compatible format are available at the `/sys_metrics` cluster endpoint. Database API Keys are used to authenticate access to cluster system metrics. `/sys_metrics` only needs to be queried once per cluster on the main load-balanced cluster endpoint. You don't need to scrape each cluster node individually, instead it will always provide metrics about all nodes.
 
 ## Grafana Dashboard
 
-If you scrape your Qdrant Cluster system metrics into your own monitoring system, and your are using Grafana, you can use our [Grafana dashboard](https://github.com/qdrant/qdrant-cloud-grafana-dashboard) to visualize these metrics.
+If you scrape your Qdrant cluster system metrics into your own monitoring system, and you are using Grafana, you can use our [Grafana dashboard](https://github.com/qdrant/qdrant-cloud-grafana-dashboard) to visualize these metrics.
 
-![Grafa dashboard](/documentation/cloud/cloud-grafana-dashboard.png)
+![Grafana dashboard](/documentation/cloud/cloud-grafana-dashboard.png)
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/pKPP-tL5_6w?si=ASKiG1P61m2YYk9J" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-### Cluster System Mtrics `/sys_metrics`
+### Cluster System Metrics `/sys_metrics`
 
 In Qdrant Cloud, each Qdrant cluster will expose the following metrics. This endpoint is not available when running Qdrant open-source.
 
@@ -60,7 +325,7 @@ In Qdrant Cloud, each Qdrant cluster will expose the following metrics. This end
 | app_info                                                    | gauge   | Information about the Qdrant server                                                                                                 |
 | app_status_recovery_mode                                    | gauge   | If Qdrant is currently started in recovery mode                                                                                     |
 | cluster_commit                                              |         |                                                                                                                                     |
-| cluster_enabled                                             |         | Indicates wether multi-node clustering is enabled                                                                                   |
+| cluster_enabled                                             |         | Indicates whether multi-node clustering is enabled                                                                                  |
 | cluster_peers_total                                         | counter | Total number of cluster peers                                                                                                       |
 | cluster_pending_operations_total                            | counter | Total number of pending operations in the cluster                                                                                   |
 | cluster_term                                                |         |                                                                                                                                     |

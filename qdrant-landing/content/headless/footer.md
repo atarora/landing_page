@@ -1,5 +1,4 @@
 ---
-subtitle: Powering the next generation of AI applications with advanced, high-performant vector similarity search technology.
 socialMedia:
   - id: 0
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_1841_958)"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 0.299805C5.35 0.299805 0 5.6498 0 12.2998C0 17.5998 3.45 22.0998 8.2 23.6998C8.8 23.7998 9 23.4498 9 23.0998C9 22.7998 9 22.0498 9 21.0498C5.65 21.7998 4.95 19.4498 4.95 19.4498C4.4 18.0498 3.6 17.6998 3.6 17.6998C2.5 16.9498 3.7 16.9498 3.7 16.9498C4.9 17.0498 5.55 18.1998 5.55 18.1998C6.6 20.0498 8.35 19.4998 9.05 19.1998C9.15 18.3998 9.45 17.8998 9.8 17.5998C7.15 17.2998 4.35 16.2498 4.35 11.6498C4.35 10.3498 4.8 9.2498 5.6 8.4498C5.5 8.1498 5.05 6.9498 5.7 5.2498C5.7 5.2498 6.7 4.9498 9 6.4998C9.95 6.2498 11 6.0998 12 6.0998C13 6.0998 14.05 6.2498 15 6.4998C17.3 4.9498 18.3 5.2498 18.3 5.2498C18.95 6.8998 18.55 8.0998 18.4 8.4498C19.15 9.2998 19.65 10.3498 19.65 11.6498C19.65 16.2498 16.85 17.2498 14.15 17.5498C14.6 17.8998 14.95 18.6498 14.95 19.7498C14.95 21.3498 14.95 22.6498 14.95 23.0498C14.95 23.3498 15.15 23.7498 15.8 23.6498C20.55 22.0998 24 17.5998 24 12.2998C24 5.6498 18.65 0.299805 12 0.299805Z" fill="#F0F3FA"/></g><defs><clipPath id="clip0_1841_958"><rect width="24" height="24" fill="white"/></clipPath></defs></svg>
@@ -36,6 +35,15 @@ menuItems:
       - id: 3
         name: Qdrant Enterprise Solutions
         url: /enterprise-solutions/
+      - id: 4
+        name: Qdrant Cloud Inference
+        url: /cloud-inference/
+      - id: 5
+        name: Qdrant Edge (Beta)
+        url: /edge/
+      - id: 6
+        name: Pricing
+        url: /pricing/
   - title: Use Cases
     items:
       - id: 0
@@ -53,6 +61,23 @@ menuItems:
       - id: 4
         name: AI Agents
         url: /ai-agents/
+  - title: Industries
+    items:
+      - id: 0
+        name: E-commerce
+        url: /e-commerce/
+      - id: 1
+        name: Legal Tech
+        url: /legal-tech/
+      - id: 2
+        name: Hospitality & Travel
+        url: /hospitality-and-travel/
+      - id: 3
+        name: HR Tech
+        url: /hr-tech/
+      - id: subMenu-1-9
+        name: Healthcare Tech
+        url: /healthcare/
   - title: Developers
     items:
       - id: 0
@@ -73,6 +98,9 @@ menuItems:
       - id: 5
         name: Status Page
         url: https://status.qdrant.io/
+      - id: 6
+        name: Certification
+        url: http://train.qdrant.dev/
   - title: Resources
     items:
       - id: 0
@@ -85,15 +113,12 @@ menuItems:
         name: Articles
         url: /articles/
       - id: 3
-        name: Events
-        url: https://try.qdrant.tech/events
-      - id: 4
         name: Startup Program
         url: /qdrant-for-startups/
-      - id: 5
+      - id: 4
         name: Demos
         url: /demo/
-      - id: 6
+      - id: 5
         name: Bug Bounty
         url: /security/bug-bounty-program/
   - title: Company
@@ -109,22 +134,20 @@ menuItems:
         url: /partners/
       - id: 3
         name: Careers
-        url: https://qdrant.join.com/
+        url: https://qdrant.to/jobs
       - id: 4
         name: Contact Us
         url: /contact-us/
-  - title: Pricing
-    url: /pricing/
-copyright: © 2025 Qdrant. All Rights Reserved
-termsLink:
-  text: Terms
-  url: /legal/terms_and_conditions/
-privacyLink:
-  text: Privacy Policy
-  url: /legal/privacy-policy/
-impressumLink:
-  text: Impressum
-  url: /legal/impressum/
+copyright: Qdrant.
+bottomLinks:
+  - text: Terms
+    url: /legal/terms_and_conditions/
+  - text: Privacy Policy
+    url: /legal/privacy-policy/
+  - text: Impressum
+    url: /legal/impressum/
+  - text: Recruitment Privacy Policy
+    url: /legal/recruitment-privacy-policy/
 bages:
   - src: /img/soc2-badge.png
     alt: "SOC2"
@@ -132,6 +155,12 @@ bages:
   - src: /img/gdpr-badge.png
     alt: "heyData GDPR"
     url: https://heydata.eu/
+  - src: /img/dark-gdpr-badge.png
+    alt: "GDPR"
+    url: /#
+  - src: /img/hipaa-badge.png
+    alt: "HIPAA"
+    url: /#
 question: Ready to get started with Qdrant?
 questionButton:
   text: Start Free

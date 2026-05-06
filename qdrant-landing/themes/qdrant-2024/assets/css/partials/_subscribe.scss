@@ -5,7 +5,7 @@
   flex-direction: column;
   padding-top: $spacer * 3;
   background: url('/img/stars-pattern.png') $neutral-10;
-  min-height: calc(100vh - 104px);
+  min-height: calc(100vh - 64px);
 
   &-body {
     flex-grow: 1;
@@ -94,7 +94,7 @@
         flex-direction: column;
 
         .hs_email {
-         & > label {
+          & > label {
             display: block;
             margin-bottom: pxToRem(6);
             font-size: pxToRem(14);
@@ -103,8 +103,8 @@
           }
         }
         .button {
-            width: 100%;
-            margin-top: $spacer * 1.5;
+          width: 100%;
+          margin-top: $spacer * 1.5;
         }
         .hs_error_rollup {
           top: 0;
@@ -114,7 +114,6 @@
     .submitted-message {
       text-align: center;
     }
-
   }
 
   &-header {
@@ -145,7 +144,7 @@
   }
 
   @include media-breakpoint-up(xl) {
-    min-height: calc(100vh - 140px);
+    min-height: calc(100vh - 100px);
 
     &-body {
       position: relative;

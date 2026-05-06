@@ -11,7 +11,6 @@
   }
 
   .main-menu {
-
     &__links {
       margin-right: auto;
       padding-left: 0;
@@ -70,7 +69,7 @@
       padding: $spacer * 0.5;
       border-radius: $spacer * 0.5;
       z-index: 1;
-      background: linear-gradient($neutral-30, #141B2E);
+      background: linear-gradient($neutral-30, #141b2e);
     }
 
     &__items {
@@ -155,6 +154,13 @@
           }
         }
       }
+      .logo {
+        background: url('/img/qdrant-logo-red-black.svg') no-repeat left bottom;
+        background-size: 120px 32px;
+        img {
+          display: none;
+        }
+      }
     }
   }
 
@@ -164,13 +170,22 @@
 
   @include media-breakpoint-up(xl) {
     .main-menu {
+      display: flex;
+      justify-content: space-between;
       height: $spacer * 5;
       padding: pxToRem(22) $spacer * 1.5;
       border-bottom: pxToRem(1) solid $neutral-20;
 
+      &__item {
+        margin: 0 clamp(#{pxToRem(4)}, 0.8vw, #{$spacer});
+      }
+
       &__buttons {
+        flex-shrink: 1;
+        min-width: 0;
+
         &-input {
-          width: pxToRem(300);
+          width: clamp(#{pxToRem(160)}, 18vw, #{pxToRem(300)});
           height: pxToRem(35);
           margin-right: $spacer * 1.5;
           padding: 0;

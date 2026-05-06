@@ -234,7 +234,7 @@ internal document expansion idea, which made the retrieval quality noticeably be
 
 - The SPARTA model is not sparse enough by construction, so authors of the SPLADE family of models introduced explicit **sparsity regularisation**, 
 preventing the model from producing too many non-zero values. 
-- The SPARTA model mostly uses the BERT model as-is, without any additional neural network to capture the specifity of Information Retrieval problem, 
+- The SPARTA model mostly uses the BERT model as-is, without any additional neural network to capture the specificity of Information Retrieval problem, 
 so SPLADE models introduce a trainable neural network on top of BERT with a specific architecture choice to make it perfectly fit the task.
 - SPLADE family of models, finally, uses **knowledge distillation**, which is learning from a bigger 
 (and therefore much slower, not-so-fit for production tasks) model how to predict good representations.
@@ -397,8 +397,8 @@ from qdrant_client import QdrantClient, models
 qdrant_client = QdrantClient(":memory:") # Qdrant is running from RAM.
 ```
 
-Now, let's create a [collection](https://qdrant.tech/documentation/concepts/collections/) in which could upload our sparse SPLADE++ embeddings. \
-For that, we will use the [sparse vectors](https://qdrant.tech/documentation/concepts/vectors/#sparse-vectors) representation supported in Qdrant.
+Now, let's create a [collection](https://qdrant.tech/documentation/manage-data/collections/) in which could upload our sparse SPLADE++ embeddings. \
+For that, we will use the [sparse vectors](https://qdrant.tech/documentation/manage-data/vectors/#sparse-vectors) representation supported in Qdrant.
 
 ```python
 qdrant_client.create_collection(
@@ -438,6 +438,7 @@ metadata = [{"movie_name": "The Passion of Joan of Arc", "movie_watch_time_min":
 </details>
 
 Upload embedded descriptions with movie metadata into the collection.
+
 ```python
 qdrant_client.upsert(
     collection_name="movies",
@@ -456,6 +457,34 @@ qdrant_client.upsert(
     ],
 )
 ```
+
+<aside role="status">
+You can also implicitly generate sparse vectors using built-in FastEmbed integration.
+</aside>
+
+<details>
+    <summary>Implicitly generate sparse vectors (Click to expand)</summary>
+
+```python
+qdrant_client.upsert(
+    collection_name="movies",
+    points=[
+        models.PointStruct(
+            id=idx,
+            payload=metadata[idx],
+            vector={
+                "film_description": models.Document(
+                    text=description, model=sparse_model_name
+                )
+            },
+        )
+        for idx, description in enumerate(descriptions)
+    ],
+)
+```
+
+</details>
+
 #### Querying
 Let’s query our collection!
 
@@ -472,6 +501,24 @@ response = qdrant_client.query_points(
 )
 print(response)
 ```
+
+<details>
+    <summary>Implicitly generate sparse vectors (Click to expand)</summary>
+
+```python
+response = qdrant_client.query_points(
+    collection_name="movies",
+    query=models.Document(text="A movie about music", model=sparse_model_name),
+    using="film_description",
+    limit=1,
+    with_vectors=True,
+    with_payload=True,
+)
+print(response)
+```
+
+</details>
+
 Output looks like this:
 ```bash
 points=[ScoredPoint(
@@ -585,6 +632,24 @@ response = qdrant_client.query_points(
 
 print(get_tokens_and_weights(response.points[0].vector['film_description'], tokenizer))
 ```
+
+<details>
+    <summary>Implicitly generate sparse vectors (Click to expand)</summary>
+
+```python
+response = qdrant_client.query_points(
+    collection_name="movies",
+    query=models.Document(text="A movie about music", model=sparse_model_name),
+    using="film_description",
+    limit=1,
+    with_vectors=True,
+    with_payload=True,
+)
+
+print(get_tokens_and_weights(response.points[0].vector["film_description"], tokenizer))
+```
+
+</details>
 
 And that's how SPLADE++ expanded the answer.
 

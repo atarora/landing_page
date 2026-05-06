@@ -12,6 +12,8 @@ set -e
 # STATIC_DIRECTORY_NAME="./qdrant-landing/static/blog/qdrant-v-1-7"
 
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 PATH_TO_IMAGE=${PATH_TO_IMAGE:-""}
 STATIC_DIRECTORY_NAME=${STATIC_DIRECTORY_NAME:-""}
 
@@ -52,7 +54,7 @@ mkdir -p $IMG_DESTINATION
 function check_file_exists_and_new() {
   local file=$1
   if [ -f "${file}" ] && [ "$ALLOW_OVERWRITE" != "true" ]; then
-    if [ $MODIFICATION_TIME -lt $(stat -c %Y "${file}") ]; then
+    if [ $MODIFICATION_TIME -le $(stat -c %Y "${file}") ]; then
       echo "$file exists and newer than the source image. Please remove it or set ALLOW_OVERWRITE=true"
       exit 0
     fi
@@ -88,4 +90,19 @@ if [ "$ADD_TO_GIT" == "true" ]; then
   git add "${IMG_DESTINATION}"
 fi
 
+if [ -z "$TITLE_TEXT" ] || [ -z "$SUBTITLE_TEXT" ]; then
+  echo -e "\033[33mWarning: Social preview is generated without text\033[0m"
+  echo "Please provide a TITLE_TEXT and SUBTITLE_TEXT"
+  exit 0
+fi
 
+export TITLE_TEXT="$TITLE_TEXT"
+export SUBTITLE_TEXT="$SUBTITLE_TEXT"
+export BACKGROUND_PATH="${IMG_DESTINATION}/social_preview.jpg"
+export OUTPUT_PATH="${IMG_DESTINATION}/social_preview.png"
+
+bash $SCRIPT_DIR/template/apply-template.sh
+
+# Convet social_preview.png to jpg
+convert "${IMG_DESTINATION}/social_preview.png" "${IMG_DESTINATION}/social_preview.jpg"
+rm "${IMG_DESTINATION}/social_preview.png"

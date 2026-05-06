@@ -7,14 +7,15 @@ preview_image: /blog/case-study-hubspot/HubSpot-Case-Study-Hero.jpg
 social_preview_image: /blog/case-study-hubspot/preview.jpg  
 date: 2025-03-24T00:00:00Z  
 author: "Andre Zayarni"  
-featured: true
+featured: false
 
 tags:  
 - vector search  
 - AI scalability  
 - customer engagement  
 - case study  
-- HubSpot  
+- HubSpot
+partition: case-studies
 ---
 
 HubSpot, a global leader in CRM solutions, continuously enhances its product suite with powerful AI-driven features. To optimize Breeze AI, its flagship intelligent assistant, HubSpot chose Qdrant as its vector database.

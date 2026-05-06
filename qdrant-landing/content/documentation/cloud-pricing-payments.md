@@ -1,7 +1,7 @@
 ---
 title: Billing & Payments
-weight: 18
-partition: cloud
+weight: 255
+partition: deploy
 aliases:
   - aws-marketplace
   - gcp-marketplace
@@ -19,9 +19,12 @@ You can pay for your Qdrant Cloud database clusters either with a credit card or
 
 Your payment method is charged at the beginning of each month for the previous month's usage. There is no difference in pricing between the different payment methods.
 
-If you choose to pay through a marketplace, the Qdrant Cloud usage costs are added as usage units to your existing billing for your cloud provider services. A detailed breakdown of your usage is available in the Qdrant Cloud Console.
+If you choose to pay through a marketplace, the Qdrant Cloud usage costs are added as \\$0.01 Resource Usage Units to your existing billing for your cloud provider services.
+E.g. if you create a Qdrant Cluster that costs \\$85 in a month, 8,500 Resource Usage Units for Qdrant Cloud will be added to your cloud provider bill.  A detailed breakdown of your usage is available in the Qdrant Cloud Console.
 
 Note: Even if you pay using a marketplace subscription, your database clusters will still be deployed into Qdrant-owned infrastructure. The setup and management of Qdrant database clusters will also still be done via the Qdrant Cloud Console UI.
+
+Note: If you choose to pay for your Qdrant Cloud clusters through a cloud provider marketplace, Qdrant Cluster creation is limited to paid clusters in regions of this cloud provider only. This is due to compliance requirements of the cloud provider. If you wish to run clusters in other regions or on other cloud providers, you can create additional accounts using a different payment method.
 
 If you wish to deploy Qdrant database clusters into your own environment from Qdrant Cloud then we recommend our [Hybrid Cloud](/documentation/hybrid-cloud/) solution.
 
@@ -29,7 +32,7 @@ If you wish to deploy Qdrant database clusters into your own environment from Qd
 
 ### Credit Card
 
-Credit card payments are processed through Stripe. To set up a credit card, go to the Billing Details screen in the [Qdrant Cloud Console](https://cloud.qdrant.io/), select **Stripe** as the payment method, and enter your credit card details.
+Credit card payments are processed through Stripe. To set up a credit card, go to the Billing Details screen in the [Qdrant Cloud Console](https://cloud.qdrant.io/), select **Credit Card** as the payment method, and enter your credit card details.
 
 ### AWS Marketplace
 
@@ -55,7 +58,7 @@ To subscribe:
 2. Select **GCP Marketplace** as the payment method. You will be redirected to the GCP Marketplace listing for Qdrant.
 3. Select **Subscribe**. (If you have already subscribed, select **Manage on Provider**.)
 4. On the next screen, choose options as required, and select **Subscribe**.
-5. On the pop-up window that appers, select **Sign up with Qdrant**.
+5. On the pop-up window that appears, select **Sign up with Qdrant**.
 
 You will be redirected to the Billing Details screen in the [Qdrant Cloud Console](https://cloud.qdrant.io/). From there you can start to create Qdrant database clusters.
 

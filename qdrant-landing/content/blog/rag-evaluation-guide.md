@@ -73,7 +73,7 @@ Quotient AI is another platform designed to streamline the evaluation of RAG sys
 
 ### Arize Phoenix: Visually Deconstructing Response Generation
 
-[Arize Phoenix](https://docs.arize.com/phoenix) is an open-source tool that helps improve the performance of RAG systems by tracking how a response is built step-by-step. You can see these steps visually in Phoenix, which helps identify slowdowns and errors. You can define "[evaluators](https://docs.arize.com/phoenix/evaluation/concepts-evals/evaluation)" that use LLMs to assess the quality of outputs, detect hallucinations, and check answer accuracy. Phoenix also calculates key metrics like latency, token usage, and errors, giving you an idea of how efficiently your RAG system is working.
+[Arize Phoenix](https://docs.arize.com/phoenix) is an open-source tool that helps improve the performance of RAG systems by tracking how a response is built step-by-step. You can see these steps visually in Phoenix, which helps identify slowdowns and errors. You can define "[evaluators](https://arize.com/docs/phoenix/evaluation/concepts-evals/evaluators)" that use LLMs to assess the quality of outputs, detect hallucinations, and check answer accuracy. Phoenix also calculates key metrics like latency, token usage, and errors, giving you an idea of how efficiently your RAG system is working.
 
 **Figure 3:** *The Arize Phoenix tool is intuitive to use and shows the entire process architecture as well as the steps that take place inside of retrieval, context and generation.*
 
@@ -87,7 +87,7 @@ Quotient AI is another platform designed to streamline the evaluation of RAG sys
 
 Improper data ingestion can cause the loss of important contextual information, which is critical for generating accurate and coherent responses. Also, inconsistent data ingestion can cause the system to produce unreliable and inconsistent responses, undermining user trust and satisfaction.
 
-Vector databases support different [indexing](https://qdrant.tech/documentation/concepts/indexing/) techniques. In order to know if you are ingesting data properly, you should always check how changes in variables related to indexing techniques affect data ingestion.
+Vector databases support different [indexing](https://qdrant.tech/documentation/manage-data/indexing/) techniques. In order to know if you are ingesting data properly, you should always check how changes in variables related to indexing techniques affect data ingestion.
 
 #### Solution: Pay attention to how your data is chunked
 
@@ -129,7 +129,7 @@ By evaluating the retrieval quality using these metrics, you can assess the effe
 
 Each new LLM with a larger context window claims to render RAG obsolete. However, studies like "[Lost in the Middle](https://arxiv.org/abs/2307.03172)" demonstrate that feeding entire documents to LLMs can diminish their ability to answer questions effectively. Therefore, the retrieval algorithm is crucial for fetching the most relevant data in the RAG system.
 
-**Configure dense vector retrieval:** You need to choose the right [similarity metric](https://qdrant.tech/documentation/concepts/search/) to get the best retrieval quality. Metrics used in dense vector retrieval include Cosine Similarity, Dot Product, Euclidean Distance, and Manhattan Distance.
+**Configure dense vector retrieval:** You need to choose the right [similarity metric](https://qdrant.tech/documentation/search/search/) to get the best retrieval quality. Metrics used in dense vector retrieval include Cosine Similarity, Dot Product, Euclidean Distance, and Manhattan Distance.
 
 **Use sparse vectors & hybrid search where needed**: For sparse vectors, the algorithm choice of BM-25, SPLADE, or BM-42 will affect retrieval quality. Hybrid Search combines dense vector retrieval with sparse vector-based search.
 

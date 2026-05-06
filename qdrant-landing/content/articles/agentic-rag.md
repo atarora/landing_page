@@ -3,7 +3,7 @@ title: "What is Agentic RAG? Building Agents with Qdrant"
 short_description: "Will agentic RAG replace linear RAG? Learn how to build agents with Qdrant and which framework is best for your use case."
 description: "Agents are a new paradigm in AI, and they are changing how we build RAG systems. Learn how to build agents with Qdrant and which framework to choose."
 preview_dir: /articles_data/agentic-rag/preview
-social_preview_image: /articles_data/agentic-rag/social-preview.png
+social_preview_image: /articles_data/agentic-rag/preview/social_preview.jpg
 weight: -150
 author: Kacper Łukawski
 author_link: https://www.kacperlukawski.com
@@ -212,7 +212,7 @@ Some of the key concepts of CrewAI include:
   Qdrant comes into play, as it might be used as a long-term memory layer.**
 
 CrewAI provides a rich set of tools integrated into the framework. That may be a huge advantage for those who want to
-combine RAG with e.g. code execution, or image generation. The ecosystem is rich, however brining your own tools is
+combine RAG with e.g. code execution, or image generation. The ecosystem is rich, however bringing your own tools is
 not a big deal, as CrewAI is designed to be extensible.
 
 A simple agentic RAG application implemented in CrewAI could look like this:

@@ -1,11 +1,13 @@
 @use 'sass:math';
 @use 'helpers/functions' as *;
-@import 'fonts/satoshi-font';
-@import 'fonts/source-code-pro';
+@import 'fonts/mona-sans-font';
+@import 'fonts/geist-mono-font';
 @import 'fonts/overpass-mono';
 @import 'bootstrap-custom';
 
 html {
+  scroll-behavior: smooth;
+
   &::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -62,6 +64,17 @@ body {
   &.no-scroll {
     overflow: hidden;
   }
+
+  // Apply Mona Sans width variation setting globally
+  // This ensures all text using Mona Sans (via font-family-base) uses width axis at 100
+  font-variation-settings: 'wdth' 100;
+  font-feature-settings: 'ss05' on;
+  font-weight: 350;
+}
+
+/* Fix thick underlines in Mona Sans font */
+* {
+  text-decoration-thickness: 1px !important;
 }
 
 .weh {
@@ -77,10 +90,14 @@ body {
   opacity: 0;
 }
 
+.divider {
+  border-top: 1px solid $neutral-40;
+  width: 100%;
+}
+
 @import 'components';
 @import 'syntax-highlight';
 @import 'mathjax';
-@import 'cookit';
 @import 'partials/logo';
 @import 'partials/top-banner';
 @import 'partials/menu-mobile';

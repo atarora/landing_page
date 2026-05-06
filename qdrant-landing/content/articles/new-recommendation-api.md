@@ -17,15 +17,15 @@ does exist, and recommendation systems are a great example. Recommendations migh
 to find items close to positive and far from negative examples. This use of vector databases has many applications, including 
 recommendation systems for e-commerce, content, or even dating apps.
 
-Qdrant has provided the [Recommendation API](/documentation/concepts/search/#recommendation-api) for a while, and with the latest release, [Qdrant 1.6](https://github.com/qdrant/qdrant/releases/tag/v1.6.0), 
+Qdrant has provided the [Recommendation API](/documentation/search/search/#recommendation-api) for a while, and with the latest release, [Qdrant 1.6](https://github.com/qdrant/qdrant/releases/tag/v1.6.0), 
 we're glad to give you more flexibility and control over the Recommendation API. 
 Here, we'll discuss some internals and show how they may be used in practice.
 
 ### Recap of the old recommendations API
 
-The previous [Recommendation API](/documentation/concepts/search/#recommendation-api) in Qdrant came with some limitations. First of all, it was required to pass vector IDs for 
+The previous [Recommendation API](/documentation/search/search/#recommendation-api) in Qdrant came with some limitations. First of all, it was required to pass vector IDs for 
 both positive and negative example points. If you wanted to use vector embeddings directly, you had to either create a new point 
-in a collection or mimic the behaviour of the Recommendation API by using the [Search API](/documentation/concepts/search/#search-api).
+in a collection or mimic the behaviour of the Recommendation API by using the [Search API](/documentation/search/search/#search-api).
 Moreover, in the previous releases of Qdrant, you were always asked to provide at least one positive example. This requirement 
 was based on the algorithm used to combine multiple samples into a single query vector. It was a simple, yet effective approach. 
 However, if the only information you had was that your user dislikes some items, you couldn't use it directly.
@@ -61,7 +61,7 @@ negative examples.
 
 ## HNSW ANN example and strategy
 
-Let’s start with an example to help you understand the [HNSW graph](/articles/filtrable-hnsw/). Assume you want 
+Let’s start with an example to help you understand the [HNSW graph](/articles/filterable-hnsw/). Assume you want 
 to travel to a small city on another continent:
 
 1. You start from your hometown and take a bus to the local airport.
@@ -129,11 +129,14 @@ directly, we check if it’s closer to positives or negatives. The following for
 potential point:
 
 ```rust
-if best_positive_score > best_negative_score {
-    score = best_positive_score
+// Sigmoid function to normalize the score between 0 and 1
+let sigmoid = |x| 0.5 * (1.0 + (x / (1.0 + x.abs())));
+
+let score = if best_positive_score > best_negative_score {
+    sigmoid(best_positive_score)
 } else {
-    score = -(best_negative_score * best_negative_score)
-}
+    -sigmoid(best_negative_score)
+};
 ```
 
 If the point is closer to the negatives, we penalize it by taking the negative squared value of the best negative score. For a 
@@ -142,11 +145,11 @@ significantly lower. However, if the best negative score is higher than the best
 further away from the negatives. That procedure effectively **pulls the traversal procedure away from the negative examples**.
 
 If you want to know more about the internals of HNSW, you can check out the article about the 
-[Filtrable HNSW](/articles/filtrable-hnsw/) that covers the topic thoroughly.
+[Filterable HNSW](/articles/filterable-hnsw/) that covers the topic thoroughly.
 
 ## Food Discovery demo
 
-Our [Food Discovery demo](/articles/food-discovery-demo/) is an application built on top of the new [Recommendation API](/documentation/concepts/search/#recommendation-api). 
+Our [Food Discovery demo](/articles/food-discovery-demo/) is an application built on top of the new [Recommendation API](/documentation/search/search/#recommendation-api). 
 It allows you to find a meal based on liked and disliked photos. There are some updates, enabled by the new Qdrant release:
 
 * **Ability to include multiple textual queries in the recommendation request.** Previously, we only allowed passing a single 
